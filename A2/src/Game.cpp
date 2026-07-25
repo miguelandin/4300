@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "Components.hpp"
 #include "Vec2.hpp"
+#include "imgui.h"
 
 #include <SFML/System/Angle.hpp>
 #include <SFML/Window/Keyboard.hpp>
@@ -10,6 +11,15 @@
 #include <iostream>
 #include <ostream>
 #include <sstream>
+
+namespace Sys {
+inline bool movement = true;
+inline bool lifespan = true;
+inline bool collision = true;
+inline bool spawning = true;
+inline bool rendering = true;
+inline bool gui = true;
+} // namespace Sys
 
 Game::Game(const std::string &config) : m_text(m_font, "Default", 24) {
   init(config);
@@ -90,13 +100,25 @@ void Game::run() {
     ImGui::SFML::Update(m_window, m_deltaClock.restart());
 
     sUserInput();
-    sEnemySpawner();
-    sLifespan();
-    sMovement();
+    if (Sys::spawning) {
+      sEnemySpawner();
+    }
+    if (Sys::lifespan) {
+      sLifespan();
+    }
+    if (Sys::movement) {
+      sMovement();
+    }
     sShooting();
-    sCollision();
-    sGUI();
-    sRender();
+    if (Sys::collision) {
+      sCollision();
+    }
+    if (Sys::gui) {
+      sGUI();
+    }
+    if (Sys::rendering) {
+      sRender();
+    }
 
     // increment the current frame
     // may need to be moved when paused implemented
@@ -293,7 +315,17 @@ void Game::sEnemySpawner() {
 
 void Game::sGUI() {
   ImGui::Begin("Geometry Wars");
-  ImGui::Text("Stuff Goes Here");
+  ImGui::Checkbox("Movement", &Sys::movement);
+  ImGui::SameLine();
+  ImGui::Checkbox("Lifespan", &Sys::lifespan);
+  ImGui::Checkbox("Collision", &Sys::collision);
+  ImGui::SameLine();
+  ImGui::Checkbox("Spawning", &Sys::spawning);
+  ImGui::Checkbox("Rendering", &Sys::rendering);
+  ImGui::SameLine();
+  ImGui::Checkbox("GUI", &Sys::gui);
+  ImGui::SliderInt("Spawn Rate", &m_eCf.SI, 1, 500);
+
   ImGui::End();
 }
 

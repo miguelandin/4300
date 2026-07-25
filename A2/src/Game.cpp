@@ -11,6 +11,7 @@
 #include <iostream>
 #include <ostream>
 #include <sstream>
+#include <string>
 
 namespace Sys {
 inline bool movement = true;
@@ -116,9 +117,7 @@ void Game::run() {
     if (Sys::gui) {
       sGUI();
     }
-    if (Sys::rendering) {
-      sRender();
-    }
+    sRender();
 
     // increment the current frame
     // may need to be moved when paused implemented
@@ -315,17 +314,55 @@ void Game::sEnemySpawner() {
 
 void Game::sGUI() {
   ImGui::Begin("Geometry Wars");
-  ImGui::Checkbox("Movement", &Sys::movement);
-  ImGui::SameLine();
-  ImGui::Checkbox("Lifespan", &Sys::lifespan);
-  ImGui::Checkbox("Collision", &Sys::collision);
-  ImGui::SameLine();
-  ImGui::Checkbox("Spawning", &Sys::spawning);
-  ImGui::Checkbox("Rendering", &Sys::rendering);
-  ImGui::SameLine();
-  ImGui::Checkbox("GUI", &Sys::gui);
-  ImGui::SliderInt("Spawn Rate", &m_eCf.SI, 1, 500);
 
+  if (ImGui::BeginTabBar("TabBar")) {
+
+    if (ImGui::BeginTabItem("Systems")) {
+      ImGui::Checkbox("Movement", &Sys::movement);
+      ImGui::Checkbox("Lifespan", &Sys::lifespan);
+      ImGui::Checkbox("Collision", &Sys::collision);
+      ImGui::Checkbox("Spawning", &Sys::spawning);
+      ImGui::Checkbox("Rendering", &Sys::rendering);
+      ImGui::Checkbox("GUI", &Sys::gui);
+      ImGui::SliderInt("Spawn Rate", &m_eCf.SI, 1, 500);
+      ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Entity Manager")) {
+      for (auto &[tag, entities] : m_entities.getEntityMap()) {
+        if (ImGui::TreeNode(tag.c_str())) {
+          if (ImGui::BeginTable(tag.c_str(), 4,
+                                ImGuiTableFlags_SizingFixedFit)) {
+            for (auto &e : entities) {
+              ImGui::TableNextRow();
+
+              ImGui::TableNextColumn();
+              ImGui::PushID(e->id());
+              if (ImGui::Button("D")) {
+                e->destroy();
+              }
+              ImGui::PopID();
+
+              ImGui::TableNextColumn();
+              ImGui::Text("%zu", e->id());
+
+              ImGui::TableNextColumn();
+              ImGui::Text("%s", e->tag().c_str());
+
+              if (e->get<CTransform>().exists) {
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", e->get<CTransform>().pos.toString().c_str());
+              }
+            }
+            ImGui::EndTable();
+          }
+          ImGui::TreePop();
+        }
+      }
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+  }
   ImGui::End();
 }
 
@@ -335,18 +372,18 @@ void Game::sRender() {
   }
 
   m_window.clear();
-
-  for (auto &e : m_entities.getEntities()) {
-    if (auto &s = e->get<CShape>(); s.exists) {
-      if (auto &t = e->get<CTransform>(); t.exists) {
-        s.circle.setPosition(t.pos);
-        t.angle += 1.0f;
-        s.circle.setRotation(sf::degrees(t.angle));
+  if (Sys::rendering) {
+    for (auto &e : m_entities.getEntities()) {
+      if (auto &s = e->get<CShape>(); s.exists) {
+        if (auto &t = e->get<CTransform>(); t.exists) {
+          s.circle.setPosition(t.pos);
+          t.angle += 1.0f;
+          s.circle.setRotation(sf::degrees(t.angle));
+        }
+        m_window.draw(s.circle);
       }
-      m_window.draw(s.circle);
     }
   }
-
   ImGui::SFML::Render(m_window);
 
   m_window.display();

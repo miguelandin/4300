@@ -42,4 +42,6 @@ public:
   EntityVec &getEntities() { return m_entities; }
 
   EntityVec &getEntities(const std::string &tag) { return m_entityMap[tag]; }
+
+  const EntityMap &getEntityMap() const { return m_entityMap; }
 };

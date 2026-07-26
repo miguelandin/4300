@@ -8,33 +8,39 @@
 #include "imgui/imgui-SFML.h"
 #include "imgui/imgui.h"
 
-struct WindowConfig {
+struct WindowConfig
+{
   unsigned int W, H;
   int FL;
   bool FS;
 };
 
-struct FontConfig {
+struct FontConfig
+{
   std::string F;
   int S, R, G, B;
 };
 
-struct PlayerConfig {
+struct PlayerConfig
+{
   int SR, CR, FR, FG, FB, OR, OG, OB, OT, V;
   float S, A, F;
 };
 
-struct EnemyConfig {
+struct EnemyConfig
+{
   int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L, SI, M, T;
   float SMIN, SMAX;
 };
 
-struct BulletConfig {
+struct BulletConfig
+{
   int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L;
   float S, I;
 };
 
-class Game {
+class Game
+{
   sf::RenderWindow m_window;
   EntityManager m_entities;
   sf::Clock m_deltaClock;
@@ -65,8 +71,7 @@ class Game {
 
   void spawnPlayer();
 
-  void spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p,
-                  const Vec2f &v, float angle);
+  void spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, const Vec2f &v, float angle);
   void spawnSmallEnemies(std::shared_ptr<Entity> entity);
 
   void spawnBullet(std::shared_ptr<Entity> entity, const Vec2f &mousePos);
@@ -76,6 +81,8 @@ class Game {
   std::shared_ptr<Entity> player();
 
   bool isColliding(const Vec2f &p1, const Vec2f &p2, float r1, float r2);
+
+  bool isColliding(std::shared_ptr<Entity> e1, std::shared_ptr<Entity> e2);
 
   void manageCollision(std::shared_ptr<Entity> entity);
 

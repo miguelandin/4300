@@ -3,32 +3,35 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <cstdint>
 
 #include "Vec2.hpp"
 
-class Component {
+class Component
+{
 public:
   bool exists = false;
 };
 
-class CTransform : public Component {
+class CTransform : public Component
+{
 public:
   Vec2f pos = {0.0, 0.0};
   Vec2f velocity = {0.0, 0.0};
   float angle = 0;
 
   CTransform() = default;
-  CTransform(const Vec2f &p, const Vec2f &v, float a)
-      : pos(p), velocity(v), angle(a) {}
+  CTransform(const Vec2f &p, const Vec2f &v, float a) : pos(p), velocity(v), angle(a) {}
 };
 
-class CShape : public Component {
+class CShape : public Component
+{
 public:
   sf::CircleShape circle;
   CShape() = default;
-  CShape(float radius, size_t points, const sf::Color &fill,
-         const sf::Color &outline, float thickness)
-      : circle(radius, points) {
+  CShape(float radius, size_t points, const sf::Color &fill, const sf::Color &outline, float thickness)
+      : circle(radius, points)
+  {
     circle.setFillColor(fill);
     circle.setOutlineColor(outline);
     circle.setOutlineThickness(thickness);
@@ -36,31 +39,36 @@ public:
   }
 };
 
-class CCollision : public Component {
+class CCollision : public Component
+{
 public:
   float radius = 0;
+  uint8_t type = 0b00000000;
+  uint8_t mask = 0b00000000;
 
   CCollision() = default;
-  CCollision(float r) : radius(r) {}
+  CCollision(float r, uint8_t t, uint8_t m) : radius(r), type(t), mask(m) {}
 };
 
-class CScore : public Component {
+class CScore : public Component
+{
 public:
   int score = 0;
   CScore() = default;
   CScore(int s) : score(s) {}
 };
 
-class CLifespan : public Component {
+class CLifespan : public Component
+{
 public:
   int lifespan = 0;  // no cambia
   int remaining = 0; // va bajando
   CLifespan() = default;
-  CLifespan(int totalLifespan)
-      : lifespan(totalLifespan), remaining(totalLifespan) {}
+  CLifespan(int totalLifespan) : lifespan(totalLifespan), remaining(totalLifespan) {}
 };
 
-class CInput : public Component {
+class CInput : public Component
+{
 public:
   bool w = false;
   bool a = false;
@@ -76,7 +84,8 @@ public:
   CInput() = default;
 };
 
-class CBounciness : public Component {
+class CBounciness : public Component
+{
 public:
   int remaining = 0;
   bool infinite = false;
@@ -84,10 +93,29 @@ public:
   CBounciness() = default;
 };
 
-class CWeapon : public Component {
+class CWeapon : public Component
+{
 public:
   int fireRate = 15;
   int lastFired = 0;
 
   CWeapon() = default;
+  CWeapon(int r) : fireRate(r) {}
+};
+
+class CExplosion : public Component
+{
+public:
+  uint8_t type = 0;
+  CExplosion() = default;
+  CExplosion(uint8_t t) : type(t) {}
+};
+
+class CSpecial : public Component
+{
+public:
+  int cooldown = 30;
+  int lastFired = 0;
+  CSpecial() = default;
+  CSpecial(int c) : cooldown(c) {}
 };

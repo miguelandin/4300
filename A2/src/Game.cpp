@@ -57,7 +57,7 @@ void Game::init(const std::string &path)
     else if (type == "Player")
     {
       iss >> m_pCf.SR >> m_pCf.CR >> m_pCf.S >> m_pCf.A >> m_pCf.F >> m_pCf.FR >> m_pCf.FG >> m_pCf.FB >> m_pCf.OR >>
-          m_pCf.OG >> m_pCf.OB >> m_pCf.OT >> m_pCf.V;
+          m_pCf.OG >> m_pCf.OB >> m_pCf.OT >> m_pCf.V >> m_pCf.FF >> m_pCf.SC;
     }
     else if (type == "Enemy")
     {
@@ -68,6 +68,11 @@ void Game::init(const std::string &path)
     {
       iss >> m_bCf.SR >> m_bCf.CR >> m_bCf.S >> m_bCf.I >> m_bCf.FR >> m_bCf.FG >> m_bCf.FB >> m_bCf.OR >> m_bCf.OG >>
           m_bCf.OB >> m_bCf.OT >> m_bCf.V >> m_bCf.L;
+    }
+    else if (type == "SBullet")
+    {
+      iss >> m_sCf.SR >> m_sCf.CR >> m_sCf.S >> m_sCf.I >> m_sCf.FR >> m_sCf.FG >> m_sCf.FB >> m_sCf.OR >> m_sCf.OG >>
+          m_sCf.OB >> m_sCf.OT >> m_sCf.V >> m_sCf.L;
     }
   }
 
@@ -160,8 +165,10 @@ void Game::spawnPlayer()
     e->add<CShape>(m_pCf.SR, m_pCf.V, sf::Color(m_pCf.FR, m_pCf.FG, m_pCf.FB), sf::Color(m_pCf.OR, m_pCf.OG, m_pCf.OB),
                    m_pCf.OT);
     e->add<CInput>();
-    e->add<CCollision>(m_pCf.CR);
-    e->add<CWeapon>();
+    e->add<CCollision>(m_pCf.CR, lyr::PLAYER, lyr::E_BULLET | lyr::E_SMALL | lyr::ENEMY);
+    e->add<CWeapon>(m_pCf.FF);
+    e->add<CExplosion>(lyr::P_SMALL);
+    e->add<CSpecial>(m_pCf.SC);
   }
 }
 
@@ -171,28 +178,33 @@ void Game::spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, cons
   auto e = m_entities.addEntity("enemy");
   e->add<CShape>(m_eCf.SR, points, fill, sf::Color(m_eCf.OR, m_eCf.OG, m_eCf.OB), m_eCf.OT);
   e->add<CTransform>(p, v, angle);
-  e->add<CCollision>(m_eCf.CR);
+  e->add<CCollision>(m_eCf.CR, lyr::ENEMY, lyr::P_BULLET | lyr::P_SMALL | lyr::PLAYER);
+  e->add<CExplosion>(lyr::E_SMALL);
   m_lastEnemySpawnTime = m_currentFrame;
 }
 
-void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
+void Game::spawnExplosion(std::shared_ptr<Entity> e)
 {
-  auto shape = e->get<CShape>().circle;
-  auto t = e->get<CTransform>();
-  float angle = (2 * std::numbers::pi) / shape.getPointCount();
-  for (int i = 0; i < shape.getPointCount(); i++)
+  if (auto &x = e->get<CExplosion>(); x.exists)
   {
-    float a = i * angle + shape.getRotation().asRadians();
-    auto s = m_entities.addEntity("small");
-    s->add<CTransform>(t.pos, Vec2f(a) * t.velocity.dis(Vec2f()), a);
-    s->add<CCollision>(e->get<CCollision>().radius / 2);
-    s->add<CShape>(shape.getRadius() / 2, shape.getPointCount(), shape.getFillColor(), shape.getOutlineColor(),
-                   shape.getOutlineThickness());
-    s->add<CLifespan>(m_eCf.L);
+    auto shape = e->get<CShape>().circle;
+    auto t = e->get<CTransform>();
+    auto c = e->get<CCollision>();
+    float angle = (2 * std::numbers::pi) / shape.getPointCount();
+    for (int i = 0; i < shape.getPointCount(); i++)
+    {
+      float a = i * angle + shape.getRotation().asRadians();
+      auto s = m_entities.addEntity("explosion");
+      s->add<CTransform>(t.pos, Vec2f(a) * t.velocity.dis(Vec2f()), a);
+      s->add<CCollision>(c.radius / 2, x.type, c.mask);
+      s->add<CShape>(shape.getRadius() / 2, shape.getPointCount(), shape.getFillColor(), shape.getOutlineColor(),
+                     shape.getOutlineThickness());
+      s->add<CLifespan>(m_eCf.L);
+    }
   }
 }
 
-void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f &target)
+void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f &target, lyr ty)
 {
   auto t = entity->get<CTransform>();
   auto dsp = target - t.pos;
@@ -201,14 +213,22 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2f &target)
   bullet->add<CTransform>(t.pos, vel, t.angle);
   bullet->add<CShape>(m_bCf.SR, m_bCf.V, sf::Color(m_bCf.FR, m_bCf.FG, m_bCf.FB),
                       sf::Color(m_bCf.OR, m_bCf.OG, m_bCf.OB), m_bCf.OT);
-  bullet->add<CCollision>(m_bCf.CR);
+  bullet->add<CCollision>(m_bCf.CR, ty, entity->get<CCollision>().mask);
   bullet->add<CLifespan>(m_bCf.L);
 }
 
-void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
+void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity, const Vec2f &target, lyr ty)
 {
-  // la entidad es quien genera la ulti en este caso el jugador
-  // TODO: implement your own special weapon
+  auto t = entity->get<CTransform>();
+  auto dsp = target - t.pos;
+  auto vel = dsp.normalize() * m_sCf.S + t.velocity + m_sCf.I;
+  auto special = m_entities.addEntity("special");
+  special->add<CTransform>(t.pos, vel, t.angle);
+  special->add<CShape>(m_sCf.SR, m_sCf.V, sf::Color(m_sCf.FR, m_sCf.FG, m_sCf.FB),
+                       sf::Color(m_sCf.OR, m_sCf.OG, m_sCf.OB), m_bCf.OT);
+  special->add<CCollision>(m_sCf.CR, ty, entity->get<CCollision>().mask);
+  special->add<CLifespan>(m_sCf.L);
+  special->add<CExplosion>(lyr::P_BULLET);
 }
 
 void Game::sMovement()
@@ -294,10 +314,18 @@ bool Game::isColliding(const Vec2f &p1, const Vec2f &p2, float r1, float r2)
   return p1.disSq(p2) < (r1 + r2) * (r1 + r2);
 }
 
-bool Game::isColliding(std::shared_ptr<Entity> e1, std::shared_ptr<Entity> e2)
+bool Game::isColliding(const std::shared_ptr<Entity> &e1, const std::shared_ptr<Entity> &e2)
 {
-  return isColliding(e1->get<CTransform>().pos, e2->get<CTransform>().pos, e1->get<CCollision>().radius,
-                     e2->get<CCollision>().radius);
+  auto c1 = e1->get<CCollision>();
+  auto c2 = e2->get<CCollision>();
+  if ((c1.type & c2.mask) && (c2.type & c1.mask))
+  {
+    return isColliding(e1->get<CTransform>().pos, e2->get<CTransform>().pos, c1.radius, c2.radius);
+  }
+  else
+  {
+    return false;
+  }
 }
 
 void Game::manageCollision(std::shared_ptr<Entity> entity)
@@ -332,52 +360,25 @@ void Game::manageCollision(std::shared_ptr<Entity> entity)
 
 void Game::sCollision()
 {
-  for (auto &e : m_entities.getEntities("enemy"))
+  for (auto &e1 : m_entities.getEntities())
   {
-    for (auto &b : m_entities.getEntities("bullet"))
+    for (auto &e2 : m_entities.getEntities())
     {
-      if (isColliding(e, b))
+      if (isColliding(e1, e2))
       {
-        e->destroy();
-        b->destroy();
+        spawnExplosion(e1);
+        spawnExplosion(e2);
+        e1->destroy();
+        e2->destroy();
       }
     }
-
-    if (isColliding(player(), e))
-    {
-      e->destroy();
-      spawnPlayer();
-    }
-
-    if (!e->isAlive())
-    {
-      spawnSmallEnemies(e);
-    }
+    manageCollision(e1);
   }
 
-  for (auto &s : m_entities.getEntities("small"))
+  if (!player()->isAlive())
   {
-    for (auto &b : m_entities.getEntities("bullet"))
-    {
-      if (isColliding(s, b))
-      {
-        s->destroy();
-        b->destroy();
-      }
-    }
-    if (isColliding(player(), s))
-    {
-      s->destroy();
-      spawnPlayer();
-    }
-  }
-
-  for (auto &e : m_entities.getEntities())
-  {
-    if (auto &c = e->get<CCollision>(); c.exists)
-    {
-      manageCollision(e);
-    }
+    player()->revive();
+    spawnPlayer();
   }
 }
 
@@ -506,31 +507,45 @@ void Game::sShooting()
   auto p = player()->get<CTransform>().pos;
   if (auto &w = player()->get<CWeapon>(); w.exists)
   {
-    if (m_currentFrame > w.lastFired + w.fireRate)
+    if (auto &i = player()->get<CInput>(); i.exists)
     {
-      if (auto &i = player()->get<CInput>(); i.exists)
+      Vec2f dir;
+      if (i.up)
       {
-        Vec2f dir;
-        if (i.up)
+        dir.y -= 1.0f;
+      }
+      if (i.down)
+      {
+        dir.y += 1.0f;
+      }
+      if (i.left)
+      {
+        dir.x -= 1.0f;
+      }
+      if (i.right)
+      {
+        dir.x += 1.0f;
+      }
+      if (dir != Vec2f())
+      {
+        if (i.special)
         {
-          dir.y -= 1.0f;
+          if (auto &s = player()->get<CSpecial>(); s.exists)
+          {
+            if (m_currentFrame > s.lastFired + s.cooldown)
+            {
+              spawnSpecialWeapon(player(), dir + p, lyr::P_BULLET);
+              s.lastFired = m_currentFrame;
+            }
+          }
         }
-        if (i.down)
+        else
         {
-          dir.y += 1.0f;
-        }
-        if (i.left)
-        {
-          dir.x -= 1.0f;
-        }
-        if (i.right)
-        {
-          dir.x += 1.0f;
-        }
-        if (dir != Vec2f())
-        {
-          spawnBullet(player(), dir + p);
-          w.lastFired = m_currentFrame;
+          if (m_currentFrame > w.lastFired + w.fireRate)
+          {
+            spawnBullet(player(), dir + p, lyr::P_BULLET);
+            w.lastFired = m_currentFrame;
+          }
         }
       }
     }
@@ -542,7 +557,7 @@ void Game::sShooting()
     {
       if (m_currentFrame > w.lastFired + w.fireRate)
       {
-        spawnBullet(e, p);
+        spawnBullet(e, p, lyr::E_BULLET);
         w.lastFired = m_currentFrame;
       }
     }

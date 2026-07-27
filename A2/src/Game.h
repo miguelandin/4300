@@ -23,7 +23,7 @@ struct FontConfig
 
 struct PlayerConfig
 {
-  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V;
+  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, FF, SC;
   float S, A, F;
 };
 
@@ -37,6 +37,23 @@ struct BulletConfig
 {
   int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L;
   float S, I;
+};
+
+struct SpecialConfig
+{
+  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L;
+  float S, I;
+};
+
+enum lyr : uint8_t
+{
+  NONE = 0,
+  PLAYER = 1 << 0,
+  ENEMY = 1 << 1,
+  P_BULLET = 1 << 2,
+  E_BULLET = 1 << 3,
+  P_SMALL = 1 << 4,
+  E_SMALL = 1 << 5
 };
 
 class Game
@@ -53,6 +70,7 @@ class Game
   PlayerConfig m_pCf;
   EnemyConfig m_eCf;
   BulletConfig m_bCf;
+  SpecialConfig m_sCf;
   sf::Font m_font;
   sf::Text m_text;
 
@@ -72,17 +90,18 @@ class Game
   void spawnPlayer();
 
   void spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, const Vec2f &v, float angle);
-  void spawnSmallEnemies(std::shared_ptr<Entity> entity);
 
-  void spawnBullet(std::shared_ptr<Entity> entity, const Vec2f &mousePos);
+  void spawnExplosion(std::shared_ptr<Entity> entity);
 
-  void spawnSpecialWeapon(std::shared_ptr<Entity> entity);
+  void spawnBullet(std::shared_ptr<Entity> entity, const Vec2f &mousePos, lyr type);
+
+  void spawnSpecialWeapon(std::shared_ptr<Entity> entity, const Vec2f &target, lyr ty);
 
   std::shared_ptr<Entity> player();
 
   bool isColliding(const Vec2f &p1, const Vec2f &p2, float r1, float r2);
 
-  bool isColliding(std::shared_ptr<Entity> e1, std::shared_ptr<Entity> e2);
+  bool isColliding(const std::shared_ptr<Entity> &e1, const std::shared_ptr<Entity> &e2);
 
   void manageCollision(std::shared_ptr<Entity> entity);
 

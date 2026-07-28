@@ -25,7 +25,7 @@ inline bool rendering = true;
 inline bool gui = true;
 } // namespace Sys
 
-Game::Game(const std::string &config) : m_text(m_font, "Default", 24) { init(config); }
+Game::Game(const std::string &config) : m_text(m_font, "Default", 48) { init(config); }
 
 void Game::init(const std::string &path)
 {
@@ -186,6 +186,7 @@ std::shared_ptr<Entity> Game::spawnEnemy(size_t points, const sf::Color &fill, c
   e->add<CTransform>(p, v, angle);
   e->add<CCollision>(m_eCf.CR, lyr::ENEMY, lyr::P_BULLET | lyr::P_SMALL | lyr::PLAYER);
   e->add<CExplosion>(lyr::E_SMALL, m_eCf.L);
+  e->add<CScore>(5 * points);
   m_lastEnemySpawnTime = m_currentFrame;
   return e;
 }
@@ -207,6 +208,10 @@ void Game::spawnExplosion(std::shared_ptr<Entity> e)
       s->add<CShape>(shape.getRadius() / 2, shape.getPointCount(), shape.getFillColor(), shape.getOutlineColor(),
                      shape.getOutlineThickness());
       s->add<CLifespan>(x.duration);
+      if (auto &p = e->get<CScore>(); p.exists)
+      {
+        s->add<CScore>(p.score * 2);
+      }
     }
   }
 }
@@ -387,6 +392,14 @@ void Game::sCollision()
         e1->destroy();
         e2->destroy();
 
+        if (auto &s = e1->get<CScore>(); s.exists)
+        {
+          m_score += s.score;
+        }
+        if (auto &s = e2->get<CScore>(); s.exists)
+        {
+          m_score += s.score;
+        }
         break;
       }
     }
@@ -398,6 +411,7 @@ void Game::sCollision()
 
   if (!player()->isAlive())
   {
+    m_score = 0;
     player()->revive();
     spawnPlayer();
   }
@@ -425,7 +439,7 @@ void Game::sEnemySpawner()
     auto color = sf::Color(rng(0, 255), rng(0, 255), rng(0, 255));
     auto angle = rng(0, std::numbers::pi * 2);
     auto vel = Vec2f(angle) * speed;
-    if (m_currentFrame - m_lastSpecialEnemySpawnTime > m_eCf.SI * 50)
+    if (m_currentFrame - m_lastSpecialEnemySpawnTime > m_eCf.SI * 25)
     {
       spawnEnemy(points, color, pos, vel, angle)->add<CWeapon>(m_pCf.FF * 5);
       m_lastSpecialEnemySpawnTime = m_currentFrame;
@@ -528,6 +542,7 @@ void Game::sRender()
     {
       m_window.draw(i.barBack);
       m_window.draw(i.barFront);
+      m_window.draw(m_text);
     }
   }
   ImGui::SFML::Render(m_window);
@@ -537,18 +552,18 @@ void Game::sRender()
 
 void Game::sInterface()
 {
+  m_text.setString(std::to_string(m_score));
   if (auto &i = player()->get<CInterface>(); i.exists)
   {
 
     static auto oc = i.barFront.getFillColor();
-    static auto ic = sf::Color(255 - oc.r, 255 - oc.g, 255 - oc.b);
     if (auto &s = player()->get<CSpecial>(); s.exists)
     {
       float percentage = (float)(m_currentFrame - s.lastFired) / (float)s.cooldown;
       if (percentage > 1.0f)
       {
         percentage = 1.0f;
-        i.barFront.setFillColor(ic);
+        i.barFront.setFillColor({0, 255, 0});
       }
       else
       {

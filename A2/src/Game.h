@@ -3,6 +3,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <memory>
 
 #include "EntityManager.hpp"
 #include "imgui/imgui-SFML.h"
@@ -64,6 +65,7 @@ class Game
   int m_score = 0;
   int m_currentFrame = 0;
   int m_lastEnemySpawnTime = 0;
+  int m_lastSpecialEnemySpawnTime = 0;
   bool m_paused = false;
   WindowConfig m_wCf;
   FontConfig m_fCf;
@@ -90,7 +92,7 @@ class Game
 
   void spawnPlayer();
 
-  void spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, const Vec2f &v, float angle);
+  std::shared_ptr<Entity> spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, const Vec2f &v, float angle);
 
   void spawnExplosion(std::shared_ptr<Entity> entity);
 

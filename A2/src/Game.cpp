@@ -172,13 +172,14 @@ void Game::spawnPlayer()
     e->add<CWeapon>(m_pCf.FF);
     e->add<CExplosion>(lyr::P_SMALL, m_pCf.L);
     e->add<CSpecial>(m_pCf.SC);
-    e->add<CInterface>(m_pCf.SR * 2, m_pCf.SR / 4, e->get<CShape>().circle.getOutlineColor(),
-                       e->get<CShape>().circle.getOutlineColor(), m_pCf.OT, m_pCf.SR);
+    e->add<CInterface>(m_pCf.SR * 2, m_pCf.SR * 0.1, e->get<CShape>().circle.getOutlineColor(),
+                       e->get<CShape>().circle.getOutlineColor(), 0, m_pCf.SR);
   }
 }
 
 // spawn an enemy at a random position
-void Game::spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, const Vec2f &v, float angle)
+std::shared_ptr<Entity> Game::spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, const Vec2f &v,
+                                         float angle)
 {
   auto e = m_entities.addEntity("enemy");
   e->add<CShape>(m_eCf.SR, points, fill, sf::Color(m_eCf.OR, m_eCf.OG, m_eCf.OB), m_eCf.OT);
@@ -186,6 +187,7 @@ void Game::spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, cons
   e->add<CCollision>(m_eCf.CR, lyr::ENEMY, lyr::P_BULLET | lyr::P_SMALL | lyr::PLAYER);
   e->add<CExplosion>(lyr::E_SMALL, m_eCf.L);
   m_lastEnemySpawnTime = m_currentFrame;
+  return e;
 }
 
 void Game::spawnExplosion(std::shared_ptr<Entity> e)
@@ -423,8 +425,15 @@ void Game::sEnemySpawner()
     auto color = sf::Color(rng(0, 255), rng(0, 255), rng(0, 255));
     auto angle = rng(0, std::numbers::pi * 2);
     auto vel = Vec2f(angle) * speed;
-
-    spawnEnemy(points, color, pos, vel, angle);
+    if (m_currentFrame - m_lastSpecialEnemySpawnTime > m_eCf.SI * 50)
+    {
+      spawnEnemy(points, color, pos, vel, angle)->add<CWeapon>(m_pCf.FF * 5);
+      m_lastSpecialEnemySpawnTime = m_currentFrame;
+    }
+    else
+    {
+      spawnEnemy(points, color, pos, vel, angle);
+    }
     m_lastEnemySpawnTime = m_currentFrame;
   }
 }

@@ -5,7 +5,7 @@
 #include "Components.hpp"
 
 using ComponentTuple =
-    std::tuple<CTransform, CShape, CCollision, CInput, CScore, CLifespan, CWeapon, CExplosion, CSpecial>;
+    std::tuple<CTransform, CShape, CCollision, CInput, CScore, CLifespan, CWeapon, CExplosion, CSpecial, CInterface>;
 
 class Entity
 {

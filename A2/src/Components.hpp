@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <cstdint>
 
@@ -107,8 +108,9 @@ class CExplosion : public Component
 {
 public:
   uint8_t type = 0;
+  int duration = 0;
   CExplosion() = default;
-  CExplosion(uint8_t t) : type(t) {}
+  CExplosion(uint8_t t, int d) : type(t), duration(d) {}
 };
 
 class CSpecial : public Component
@@ -118,4 +120,26 @@ public:
   int lastFired = 0;
   CSpecial() = default;
   CSpecial(int c) : cooldown(c) {}
+};
+
+class CInterface : public Component
+{
+public:
+  sf::RectangleShape barBack;
+  sf::RectangleShape barFront;
+  CInterface() = default;
+  CInterface(float width, float height, const sf::Color &fill, const sf::Color &outline, float thickness, float radius)
+      : barBack({width, height}), barFront({0, height})
+  {
+    float x = width / 2.0f;
+    float y = height + radius + 10.0f;
+    barBack.setFillColor({255, 255, 255});
+    barBack.setOutlineColor({255, 255, 255});
+    barBack.setOutlineThickness(thickness);
+    barBack.setOrigin({x, y});
+    barFront.setFillColor(fill);
+    barFront.setOutlineColor(outline);
+    barFront.setOutlineThickness(thickness);
+    barFront.setOrigin({x, y});
+  }
 };

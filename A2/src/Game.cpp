@@ -3,6 +3,8 @@
 #include "Vec2.hpp"
 #include "imgui.h"
 
+#include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/Shape.hpp>
 #include <SFML/System/Angle.hpp>
 #include <SFML/Window/Keyboard.hpp>
 
@@ -57,7 +59,7 @@ void Game::init(const std::string &path)
     else if (type == "Player")
     {
       iss >> m_pCf.SR >> m_pCf.CR >> m_pCf.S >> m_pCf.A >> m_pCf.F >> m_pCf.FR >> m_pCf.FG >> m_pCf.FB >> m_pCf.OR >>
-          m_pCf.OG >> m_pCf.OB >> m_pCf.OT >> m_pCf.V >> m_pCf.FF >> m_pCf.SC;
+          m_pCf.OG >> m_pCf.OB >> m_pCf.OT >> m_pCf.V >> m_pCf.FF >> m_pCf.SC >> m_pCf.L;
     }
     else if (type == "Enemy")
     {
@@ -142,6 +144,7 @@ void Game::run()
     {
       sGUI();
     }
+    sInterface();
     sRender();
 
     // increment the current frame
@@ -167,8 +170,10 @@ void Game::spawnPlayer()
     e->add<CInput>();
     e->add<CCollision>(m_pCf.CR, lyr::PLAYER, lyr::E_BULLET | lyr::E_SMALL | lyr::ENEMY);
     e->add<CWeapon>(m_pCf.FF);
-    e->add<CExplosion>(lyr::P_SMALL);
+    e->add<CExplosion>(lyr::P_SMALL, m_pCf.L);
     e->add<CSpecial>(m_pCf.SC);
+    e->add<CInterface>(m_pCf.SR * 2, m_pCf.SR / 4, e->get<CShape>().circle.getOutlineColor(),
+                       e->get<CShape>().circle.getOutlineColor(), m_pCf.OT, m_pCf.SR);
   }
 }
 
@@ -179,7 +184,7 @@ void Game::spawnEnemy(size_t points, const sf::Color &fill, const Vec2f &p, cons
   e->add<CShape>(m_eCf.SR, points, fill, sf::Color(m_eCf.OR, m_eCf.OG, m_eCf.OB), m_eCf.OT);
   e->add<CTransform>(p, v, angle);
   e->add<CCollision>(m_eCf.CR, lyr::ENEMY, lyr::P_BULLET | lyr::P_SMALL | lyr::PLAYER);
-  e->add<CExplosion>(lyr::E_SMALL);
+  e->add<CExplosion>(lyr::E_SMALL, m_eCf.L);
   m_lastEnemySpawnTime = m_currentFrame;
 }
 
@@ -199,7 +204,7 @@ void Game::spawnExplosion(std::shared_ptr<Entity> e)
       s->add<CCollision>(c.radius / 2, x.type, c.mask);
       s->add<CShape>(shape.getRadius() / 2, shape.getPointCount(), shape.getFillColor(), shape.getOutlineColor(),
                      shape.getOutlineThickness());
-      s->add<CLifespan>(m_eCf.L);
+      s->add<CLifespan>(x.duration);
     }
   }
 }
@@ -228,7 +233,7 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity, const Vec2f &targe
                        sf::Color(m_sCf.OR, m_sCf.OG, m_sCf.OB), m_bCf.OT);
   special->add<CCollision>(m_sCf.CR, ty, entity->get<CCollision>().mask);
   special->add<CLifespan>(m_sCf.L);
-  special->add<CExplosion>(lyr::P_BULLET);
+  special->add<CExplosion>(lyr::P_BULLET, m_sCf.L);
 }
 
 void Game::sMovement()
@@ -362,17 +367,31 @@ void Game::sCollision()
 {
   for (auto &e1 : m_entities.getEntities())
   {
+    if (!e1->isAlive())
+    {
+      continue;
+    }
+
     for (auto &e2 : m_entities.getEntities())
     {
+      if (!e2->isAlive() || e1->id() == e2->id())
+      {
+        continue;
+      }
       if (isColliding(e1, e2))
       {
         spawnExplosion(e1);
         spawnExplosion(e2);
         e1->destroy();
         e2->destroy();
+
+        break;
       }
     }
-    manageCollision(e1);
+    if (e1->isAlive())
+    {
+      manageCollision(e1);
+    }
   }
 
   if (!player()->isAlive())
@@ -496,10 +515,42 @@ void Game::sRender()
         m_window.draw(s.circle);
       }
     }
+    if (auto &i = player()->get<CInterface>(); i.exists)
+    {
+      m_window.draw(i.barBack);
+      m_window.draw(i.barFront);
+    }
   }
   ImGui::SFML::Render(m_window);
 
   m_window.display();
+}
+
+void Game::sInterface()
+{
+  if (auto &i = player()->get<CInterface>(); i.exists)
+  {
+
+    static auto oc = i.barFront.getFillColor();
+    static auto ic = sf::Color(255 - oc.r, 255 - oc.g, 255 - oc.b);
+    if (auto &s = player()->get<CSpecial>(); s.exists)
+    {
+      float percentage = (float)(m_currentFrame - s.lastFired) / (float)s.cooldown;
+      if (percentage > 1.0f)
+      {
+        percentage = 1.0f;
+        i.barFront.setFillColor(ic);
+      }
+      else
+      {
+        i.barFront.setFillColor(oc);
+      }
+      i.barFront.setOutlineColor(i.barFront.getFillColor());
+      i.barBack.setPosition(player()->get<CTransform>().pos);
+      i.barFront.setPosition(i.barBack.getPosition());
+      i.barFront.setSize({i.barBack.getSize().x * percentage, i.barBack.getSize().y});
+    }
+  }
 }
 
 void Game::sShooting()

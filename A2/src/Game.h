@@ -23,7 +23,7 @@ struct FontConfig
 
 struct PlayerConfig
 {
-  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, FF, SC;
+  int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, FF, SC, L;
   float S, A, F;
 };
 
@@ -86,6 +86,7 @@ class Game
   void sEnemySpawner();
   void sCollision();
   void sShooting();
+  void sInterface();
 
   void spawnPlayer();
 

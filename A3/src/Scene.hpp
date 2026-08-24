@@ -1,6 +1,7 @@
 #include "Action.hpp"
 #include "EntityManager.hpp"
-#include "GameEngine.hpp"
+
+class GameEngine;
 
 using actionMap = std::map<int, std::string>;
 

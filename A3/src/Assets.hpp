@@ -3,30 +3,74 @@
 #include <SFML/Audio/SoundBuffer.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <fstream>
 #include <map>
 #include <string>
 
+using textures = std::map<std::string, sf::Texture>;
+using sounds = std::map<std::string, sf::SoundBuffer>;
+using fonts = std::map<std::string, sf::Font>;
+using animations = std::map<std::string, Animation>;
+
 class Assets {
-  std::map<std::string, sf::Texture> m_textures;
-  std::map<std::string, sf::SoundBuffer> m_sounds;
-  std::map<std::string, sf::Font> m_fonts;
-  std::map<std::string, Animation> m_animations;
+  textures m_textures;
+  sounds m_sounds;
+  fonts m_fonts;
+  animations m_animations;
+
+  void addTexture(std::string name, std::string path, bool smooth = false,
+                  bool repeated = false) {
+    auto texture = sf::Texture(std::move(path));
+    texture.setSmooth(smooth);
+    texture.setRepeated(repeated);
+    m_textures.emplace(std::move(name), std::move(texture));
+  }
+
+  void addSound(std::string name, std::string path) {
+    m_sounds.emplace(std::move(name), std::move(path));
+  }
+
+  void addFont(std::string name, std::string path) {
+    m_fonts.emplace(std::move(name), std::move(path));
+  }
+
+  void addAnimation(std::string name, Animation animation) {
+    m_animations.emplace(std::move(name), std::move(animation));
+  }
+
+  Assets() = default;
 
 public:
-  void addTexture(const std::string &name, const std::string &path) {
-    m_textures.emplace(name, path);
+  static Assets &Instance() {
+    static Assets assets;
+    return assets;
   }
 
-  void addSound(const std::string &name, const std::string &path) {
-    m_sounds.emplace(name, path);
-  }
+  void loadFromFile(const std::string &path) {
+    std::ifstream file(path);
+    std::string str;
 
-  void addFont(const std::string &name, const std::string &path) {
-    m_fonts.emplace(name, path);
-  }
-
-  void addAnimation(const std::string &name, const Animation &animation) {
-    m_animations.emplace(name, animation);
+    while (file >> str) {
+      if (str == "Texture") {
+        std::string name, path;
+        file >> name >> path;
+        addTexture(std::move(name), std::move(path));
+      } else if (str == "Animation") {
+        std::string name, texture;
+        int frames, speed;
+        file >> name >> texture >> frames >> speed;
+        auto animation = Animation(name, getTexture(texture), frames, speed);
+        addAnimation(std::move(name), std::move(animation));
+      } else if (str == "Font") {
+        std::string name, path;
+        file >> name >> path;
+        addFont(std::move(name), std::move(path));
+      } else if (str == "Sound") {
+        std::string name, path;
+        file >> name >> path;
+        addSound(std::move(name), std::move(path));
+      }
+    }
   }
 
   const sf::Texture &getTexture(const std::string &name) const {
@@ -44,4 +88,8 @@ public:
   const Animation &getAnimation(const std::string &name) const {
     return m_animations.at(name);
   }
+
+  const textures &getTextures() const { return m_textures; }
+
+  const animations &getAnimations() const { return m_animations; }
 };

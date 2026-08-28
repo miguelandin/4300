@@ -1,10 +1,11 @@
 #pragma once
 #include "Component.hpp"
-#include <memory>
 #include <string>
 #include <tuple>
 
-using ComponentTuple = std::tuple<>; // Components go here
+using ComponentTuple =
+    std::tuple<CTransform, CLifespan, CInput, CBoundingBox, CAnimation,
+               CGravity, CState>; // Components go here
 
 class Entity {
   friend class EntityManager;

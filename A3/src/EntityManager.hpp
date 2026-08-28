@@ -1,6 +1,7 @@
 #pragma once
 #include "Entity.hpp"
 #include <map>
+#include <memory>
 #include <vector>
 
 using EntityVec = std::vector<std::shared_ptr<Entity>>;
@@ -36,9 +37,10 @@ public:
     }
   }
 
-  std::shared_ptr<Entity> addEntity(const std::string &tag) {
-    auto e = std::shared_ptr<Entity>(new Entity(tag, m_totalEntities++));
-    m_toAdd.push_back(e);
+  std::shared_ptr<Entity> addEntity(std::string tag) {
+    auto e =
+        std::shared_ptr<Entity>(new Entity(std::move(tag), m_totalEntities++));
+    m_toAdd.push_back(std::move(e));
     return e;
   }
 

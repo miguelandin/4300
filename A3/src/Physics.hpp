@@ -1,6 +1,7 @@
 #pragma once
 #include "Entity.hpp"
 #include <SFML/System/Vector2.hpp>
+#include <memory>
 
 namespace Physics {
 sf::Vector2f GetOverlap(std::shared_ptr<Entity> a, std::shared_ptr<Entity> b) {

@@ -1,6 +1,5 @@
 #pragma once
 #include "Animation.hpp"
-#include "Assets.hpp"
 #include <SFML/System/Vector2.hpp>
 #include <optional>
 #include <string>

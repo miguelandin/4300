@@ -6,7 +6,7 @@ OUTPUT=sfmlgame
 CXXFLAGS=-O3 -std=c++23 -Wno-deprecated-declarations
 
 # linker flags, will link the SFML library
-LDFLAGS=-O3 -lsfml-graphics -lsfml-window -lsfml-system -lGL
+LDFLAGS=-O3 -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lGL
 
 #include directory(s), will include the engine files
 INCLUDES=-I$(SRC_DIR) -I$(SRC_DIR)/imgui

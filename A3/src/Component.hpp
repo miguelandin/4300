@@ -53,7 +53,9 @@ public:
   sf::Vector2f halfSize;
 
   CBoundingBox() = default;
-  CBoundingBox(const sf::Vector2f &s) : size(s), halfSize(s.x / 2, s.y / 2) {}
+  template <typename T>
+  CBoundingBox(const sf::Vector2<T> &s)
+      : size(s), halfSize(size.x / 2.0f, size.y / 2.0f) {}
 };
 
 class CAnimation : public Component {

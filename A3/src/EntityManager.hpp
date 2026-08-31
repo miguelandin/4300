@@ -4,19 +4,19 @@
 #include <memory>
 #include <vector>
 
-using EntityVec = std::vector<std::shared_ptr<Entity>>;
-using EntityMap = std::map<std::string, EntityVec>;
+using entity_ptr = std::shared_ptr<Entity>;
+using entity_vec = std::vector<entity_ptr>;
+using entity_map = std::map<std::string, entity_vec>;
 
 class EntityManager {
-  EntityVec m_entities;
-  EntityVec m_toAdd;
-  EntityMap m_entityMap;
+  entity_vec m_entities;
+  entity_vec m_toAdd;
+  entity_map m_entityMap;
   size_t m_totalEntities = 0;
 
-  void removeDeadEntities(EntityVec &vec) {
-    std::erase_if(vec, [](const std::shared_ptr<Entity> &entity) {
-      return !entity->isAlive();
-    });
+  void removeDeadEntities(entity_vec &vec) {
+    std::erase_if(vec,
+                  [](const entity_ptr &entity) { return !entity->isAlive(); });
   }
 
 public:
@@ -37,16 +37,15 @@ public:
     }
   }
 
-  std::shared_ptr<Entity> addEntity(std::string tag) {
-    auto e =
-        std::shared_ptr<Entity>(new Entity(std::move(tag), m_totalEntities++));
+  entity_ptr addEntity(std::string tag) {
+    auto e = entity_ptr(new Entity(std::move(tag), m_totalEntities++));
     m_toAdd.push_back(std::move(e));
     return e;
   }
 
-  EntityVec &getEntities() { return m_entities; }
+  entity_vec &getEntities() { return m_entities; }
 
-  EntityVec &getEntities(const std::string &tag) { return m_entityMap[tag]; }
+  entity_vec &getEntities(const std::string &tag) { return m_entityMap[tag]; }
 
-  const EntityMap &getEntityMap() const { return m_entityMap; }
+  const entity_map &getEntityMap() const { return m_entityMap; }
 };

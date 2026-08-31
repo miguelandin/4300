@@ -1,5 +1,7 @@
+#pragma once
 #include "Action.hpp"
 #include "EntityManager.hpp"
+#include <SFML/Window/Keyboard.hpp>
 
 class GameEngine;
 
@@ -8,17 +10,17 @@ using actionMap = std::map<int, std::string>;
 class Scene {
 protected:
   GameEngine *m_game = nullptr;
-  EntityManager m_entities;
+  EntityManager m_entityManager;
   actionMap m_actionMap;
   size_t m_frame = 0;
   bool m_paused = false;
 
-public:
   Scene() = default;
 
-  ~Scene() = default;
-
   explicit Scene(GameEngine *gameEngine) : m_game(gameEngine) {}
+
+public:
+  ~Scene() = default;
 
   virtual void update() = 0;
 
@@ -34,8 +36,8 @@ public:
 
   void doAction(const Action &action) { sDoAction(action); }
 
-  void registerAction(int code, const std::string &name) {
-    m_actionMap[code] = name;
+  void registerAction(sf::Keyboard::Scancode code, std::string name) {
+    m_actionMap.emplace(static_cast<int>(code), std::move(name));
   }
 
   void setPaused(bool paused) { m_paused = paused; }

@@ -10,7 +10,7 @@ using actionMap = std::map<int, std::string>;
 class Scene {
 protected:
   GameEngine *m_game = nullptr;
-  EntityManager m_entityManager;
+  EntityManager m_entities;
   actionMap m_actionMap;
   size_t m_frame = 0;
   bool m_paused = false;

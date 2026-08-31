@@ -39,13 +39,15 @@ public:
 
   entity_ptr addEntity(std::string tag) {
     auto e = entity_ptr(new Entity(std::move(tag), m_totalEntities++));
-    m_toAdd.push_back(std::move(e));
+    m_toAdd.push_back(e);
     return e;
   }
 
   entity_vec &getEntities() { return m_entities; }
 
-  entity_vec &getEntities(const std::string &tag) { return m_entityMap[tag]; }
+  entity_vec &getEntities(const std::string &tag) {
+    return m_entityMap.at(tag);
+  }
 
   const entity_map &getEntityMap() const { return m_entityMap; }
 };

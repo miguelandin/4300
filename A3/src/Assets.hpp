@@ -3,8 +3,12 @@
 #include <SFML/Audio/SoundBuffer.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <cstdlib>
+#include <exception>
 #include <fstream>
+#include <iostream>
 #include <map>
+#include <stdexcept>
 #include <string>
 
 using textures = std::map<std::string, sf::Texture>;
@@ -18,33 +22,49 @@ class Assets {
   fonts m_fonts;
   animations m_animations;
 
-  void addTexture(std::string name, std::string path, bool smooth = false,
-                  bool repeated = false) {
-    auto texture = sf::Texture(std::move(path));
-    texture.setSmooth(smooth);
-    texture.setRepeated(repeated);
-    m_textures.emplace(std::move(name), std::move(texture));
+  void addTexture(const std::string &name, const std::string &path,
+                  bool smooth = false, bool repeated = false) {
+    try {
+      sf::Texture texture(path);
+      texture.setSmooth(smooth);
+      texture.setRepeated(repeated);
+      m_textures.emplace(name, std::move(texture));
+    } catch (const std::exception &e) {
+      std::cout << "[!] Error loading TEXTURE" << std::endl;
+      std::cout << "Name: " << name << ", path: " << path << std::endl;
+      std::exit(1);
+    }
   }
 
-  void addSound(std::string name, std::string path) {
-    m_sounds.emplace(std::move(name), std::move(path));
+  void addSound(const std::string &name, const std::string &path) {
+    try {
+      m_sounds.emplace(name, path);
+    } catch (const std::exception &e) {
+      std::cout << "[!] Error loading SOUND" << std::endl;
+      std::cout << "Name: " << name << ", path: " << path << std::endl;
+      std::exit(1);
+    }
   }
 
-  void addFont(std::string name, std::string path) {
-    m_fonts.emplace(std::move(name), std::move(path));
+  void addFont(const std::string &name, const std::string &path) {
+    try {
+      m_fonts.emplace(std::move(name), std::move(path));
+    } catch (const std::exception &e) {
+      std::cout << "[!] Error loading FONT" << std::endl;
+      std::cout << "Name: " << name << ", path: " << path << std::endl;
+      std::exit(1);
+    }
   }
 
   void addAnimation(std::string name, Animation animation) {
     m_animations.emplace(std::move(name), std::move(animation));
   }
 
-  Assets() = default;
+  Assets(const Assets &) = delete;
+  Assets &operator=(const Assets &) = delete;
 
 public:
-  static Assets &Instance() {
-    static Assets assets;
-    return assets;
-  }
+  Assets() = default;
 
   void loadFromFile(const std::string &path) {
     std::ifstream file(path);
@@ -74,19 +94,39 @@ public:
   }
 
   const sf::Texture &getTexture(const std::string &name) const {
-    return m_textures.at(name);
+    try {
+      return m_textures.at(name);
+    } catch (const std::out_of_range &e) {
+      std::cout << "[!] name not found at TEXTURES: " << name << std::endl;
+      std::exit(1);
+    }
   }
 
   const sf::SoundBuffer &getSound(const std::string &name) const {
-    return m_sounds.at(name);
+    try {
+      return m_sounds.at(name);
+    } catch (const std::out_of_range &e) {
+      std::cout << "[!] name not found at SOUNDS: " << name << std::endl;
+      std::exit(1);
+    }
   }
 
   const sf::Font &getFont(const std::string &name) const {
-    return m_fonts.at(name);
+    try {
+      return m_fonts.at(name);
+    } catch (const std::out_of_range &e) {
+      std::cout << "[!] name not found at FONTS: " << name << std::endl;
+      std::exit(1);
+    }
   }
 
   const Animation &getAnimation(const std::string &name) const {
-    return m_animations.at(name);
+    try {
+      return m_animations.at(name);
+    } catch (const std::out_of_range &e) {
+      std::cout << "[!] name not found at ANIMATIONS: " << name << std::endl;
+      std::exit(1);
+    }
   }
 
   const textures &getTextures() const { return m_textures; }

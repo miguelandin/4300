@@ -1,10 +1,11 @@
 #include "GameEngine.h"
 #include "Scene_Play.h"
+#include <SFML/Graphics/RenderWindow.hpp>
 
 void GameEngine::init(const std::string &path) {
-  m_assets.loadFromFile(path);
   m_window.create(sf::VideoMode({1280, 960}), "Not Mario");
   m_window.setFramerateLimit(60);
+  m_assets.loadFromFile(path);
   m_running = true;
 
   changeScene("LEVEL1", std::make_shared<Scene_Play>(this, "NA"));
@@ -12,9 +13,7 @@ void GameEngine::init(const std::string &path) {
 
 scene_ptr GameEngine::currentScene() { return m_scenes.at(m_scene); }
 
-GameEngine::GameEngine(const std::string &path) : m_assets(Assets::Instance()) {
-  init(path);
-}
+GameEngine::GameEngine(const std::string &path) { init(path); }
 
 void GameEngine::run() {
   while (m_running) {
@@ -50,3 +49,7 @@ void GameEngine::changeScene(std::string sceneName, scene_ptr scene,
   }
   setCurrentScene(std::move(sceneName));
 }
+
+const Assets &GameEngine::assets() const { return m_assets; }
+
+sf::RenderWindow &GameEngine::window() { return m_window; }

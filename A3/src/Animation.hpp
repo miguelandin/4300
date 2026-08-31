@@ -3,6 +3,7 @@
 #include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <algorithm>
 #include <string>
 
 class Animation {
@@ -17,7 +18,11 @@ public:
   Animation(const std::string &name, const sf::Texture &texture, int frameCount,
             int speed)
       : m_name(name), m_sprite(texture), m_frameCount(frameCount),
-        m_speed(speed) {
+        m_currentFrame(0), m_speed(speed) {
+
+    m_frameCount = std::max(1, m_frameCount);
+    m_speed = std::max(1, m_speed);
+
     m_size = {m_sprite.getTextureRect().size.x / m_frameCount,
               m_sprite.getTextureRect().size.y};
     m_sprite.setTextureRect({{0, 0}, m_size});

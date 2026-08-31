@@ -26,7 +26,9 @@ public:
 
   template <typename T> T &get() { return std::get<T>(m_components); }
 
-  template <typename T> T &get() const { return std::get<T>(m_components); }
+  template <typename T> const T &get() const {
+    return std::get<T>(m_components);
+  }
 
   template <typename T> bool has() const { return get<T>().exists; }
 

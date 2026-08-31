@@ -3,6 +3,7 @@
 #include "EntityManager.hpp"
 #include "Scene.hpp"
 #include <SFML/System/Vector2.hpp>
+#include <iostream>
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
     : Scene(gameEngine), m_levelPath(levelPath) {
@@ -37,7 +38,7 @@ sf::Vector2f Scene_Play::gridToMidPixel(float gridX, float gridY,
 
 void Scene_Play::loadLevel(const std::string &filename) {
   // reset the entity manager every time we load the level
-  m_entityManager = EntityManager();
+  m_entities = EntityManager();
 
   // TODO read in the level file and add appropiate entities
   // use the playerConfig struct m_playerConfig to store player properties
@@ -46,29 +47,31 @@ void Scene_Play::loadLevel(const std::string &filename) {
   // entities, it should be removed
   spawnPlayer();
 
-  auto brick = m_entityManager.addEntity("tile");
-  brick->add<CAnimation>(Assets::Instance().getAnimation("Brick"), true);
+  auto brick = m_entities.addEntity("tile");
   brick->add<CTransform>(sf::Vector2f(96, 480));
+  brick->add<CAnimation>(m_game->assets().getAnimation("QuestionBlock"), true);
   // NOTE: Your final code should position the entity using the gridToMidPixel
   // func read from the levelFile
   // brick->add<CTransform>(gridToMidPixel(gridX,gridY,brick));
-  brick->add<CBoundingBox>(Assets::Instance().getAnimation("Brick").size());
-  if (brick->get<CAnimation>().animation->name() == "Brick") {
+  brick->add<CBoundingBox>(
+      m_game->assets().getAnimation("QuestionBlock").size());
+  if (brick->get<CAnimation>().animation->name() == "QuestionBlock") {
     // this is a good way for identifying if a tile is a brick!
   }
 }
 
 void Scene_Play::spawnPlayer() {
   if (!m_player) {
-    m_player = m_entityManager.addEntity("Player");
+    m_player = m_entities.addEntity("Player");
   }
 
-  m_player->add<CAnimation>(Assets::Instance().getAnimation("Stand"), true);
+  m_player->add<CAnimation>(m_game->assets().getAnimation("QuestionBlock"),
+                            true);
   m_player->add<CTransform>(sf::Vector2f(224, 352));
   m_player->add<CBoundingBox>(sf::Vector2f(48, 48));
   m_player->add<CState>("Stand");
   m_player->add<CInput>();
-
+  std::cout << "LOADING COMPLETE" << std::endl;
   // TODO be sure to add the remaining components to the player (read from
   // m_playerConfig)
 }
@@ -79,7 +82,7 @@ void Scene_Play::spawnBullet(entity_ptr entity) {
 }
 
 void Scene_Play::update() {
-  m_entityManager.update();
+  m_entities.update();
   // TODO implement pause functionality
 
   sMovement();
@@ -113,6 +116,22 @@ void Scene_Play::sCollision() {
   // TODO: Check to see if the player has fallen down a hole (y > height())
   // TODO: Don't let the player walk of the left side of the map
 }
-void Scene_Play::sAnimation() {}
-void Scene_Play::sRender() {}
+void Scene_Play::sAnimation() {
+  for (auto &e : m_entities.getEntities()) {
+    if (e->has<CAnimation>()) {
+      e->get<CAnimation>().animation->update();
+    }
+  }
+}
+
+void Scene_Play::sRender() {
+  for (auto &e : m_entities.getEntities()) {
+    if (e->has<CAnimation>() && e->has<CTransform>()) {
+      auto sprite = e->get<CAnimation>().animation->sprite();
+      sprite.setPosition(e->get<CTransform>().pos);
+      m_game->window().draw(sprite);
+    }
+  }
+}
+
 void Scene_Play::sDoAction(const Action &action) {}

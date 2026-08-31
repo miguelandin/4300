@@ -1,8 +1,7 @@
 #pragma once
 #include "Assets.hpp"
 #include "Scene.hpp"
-#include <SFML/Window.hpp>
-#include <SFML/Window/Window.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
 #include <memory>
 #include <string>
 
@@ -11,7 +10,7 @@ using scene_map = std::map<std::string, scene_ptr>;
 
 class GameEngine {
   scene_map m_scenes;
-  sf::Window m_window;
+  sf::RenderWindow m_window;
   Assets m_assets;
   std::string m_scene;
   bool m_running;
@@ -30,4 +29,7 @@ public:
   void endActualScene();
   void changeScene(std::string sceneName, scene_ptr scene,
                    bool endScene = false);
+
+  const Assets &assets() const;
+  sf::RenderWindow &window();
 };

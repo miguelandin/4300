@@ -79,7 +79,7 @@ public:
         std::string name, texture;
         int frames, speed;
         file >> name >> texture >> frames >> speed;
-        auto animation = Animation(name, getTexture(texture), frames, speed);
+        Animation animation(name, getTexture(texture), frames, speed);
         addAnimation(std::move(name), std::move(animation));
       } else if (str == "Font") {
         std::string name, path;

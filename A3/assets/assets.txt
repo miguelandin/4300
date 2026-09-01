@@ -1,2 +1,4 @@
 Texture QuestionBlock assets/question-block.png
 Animation QuestionBlock QuestionBlock 2 25
+Texture Bush assets/bush.png
+Animation Bush Bush 2 25

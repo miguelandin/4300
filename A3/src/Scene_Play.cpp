@@ -3,7 +3,6 @@
 #include "EntityManager.hpp"
 #include "Scene.hpp"
 #include <SFML/System/Vector2.hpp>
-#include <iostream>
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
     : Scene(gameEngine), m_levelPath(levelPath) {
@@ -58,6 +57,10 @@ void Scene_Play::loadLevel(const std::string &filename) {
   if (brick->get<CAnimation>().animation->name() == "QuestionBlock") {
     // this is a good way for identifying if a tile is a brick!
   }
+
+  auto bush = m_entities.addEntity("bush");
+  bush->add<CAnimation>(m_game->assets().getAnimation("Bush"), true);
+  bush->add<CTransform>(sf::Vector2f(450, 450));
 }
 
 void Scene_Play::spawnPlayer() {
@@ -71,7 +74,6 @@ void Scene_Play::spawnPlayer() {
   m_player->add<CBoundingBox>(sf::Vector2f(48, 48));
   m_player->add<CState>("Stand");
   m_player->add<CInput>();
-  std::cout << "LOADING COMPLETE" << std::endl;
   // TODO be sure to add the remaining components to the player (read from
   // m_playerConfig)
 }
@@ -125,6 +127,7 @@ void Scene_Play::sAnimation() {
 }
 
 void Scene_Play::sRender() {
+  m_game->window().clear({255, 255, 255});
   for (auto &e : m_entities.getEntities()) {
     if (e->has<CAnimation>() && e->has<CTransform>()) {
       auto sprite = e->get<CAnimation>().animation->sprite();

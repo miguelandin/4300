@@ -5,7 +5,6 @@
 #include "Scene.hpp"
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
-#include <memory>
 #include <string>
 
 class Scene_Play : public Scene {

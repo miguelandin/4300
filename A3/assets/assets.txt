@@ -3,4 +3,4 @@ Animation QuestionBlock QuestionBlock 2 25
 Texture Bush assets/bush.png
 Animation Bush Bush 2 25
 Texture Stand assets/stand.png
-Animation Stand Stand 2 25
+Animation Stand Stand 6 5

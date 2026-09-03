@@ -29,6 +29,8 @@ void GameEngine::quit() {
   m_window.close();
 };
 
+void GameEngine::sUserInput() {}
+
 void GameEngine::setCurrentScene(std::string scene) {
   m_scene = std::move(scene);
 }

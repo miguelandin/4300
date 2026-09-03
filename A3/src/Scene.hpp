@@ -19,6 +19,10 @@ protected:
 
   explicit Scene(GameEngine *gameEngine) : m_game(gameEngine) {}
 
+  void registerAction(sf::Keyboard::Scancode code, std::string name) {
+    m_actionMap.emplace(static_cast<int>(code), std::move(name));
+  }
+
 public:
   ~Scene() = default;
 
@@ -35,10 +39,6 @@ public:
   }
 
   void doAction(const Action &action) { sDoAction(action); }
-
-  void registerAction(sf::Keyboard::Scancode code, std::string name) {
-    m_actionMap.emplace(static_cast<int>(code), std::move(name));
-  }
 
   void setPaused(bool paused) { m_paused = paused; }
 

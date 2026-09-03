@@ -16,19 +16,19 @@ class GameEngine {
   bool m_running;
 
   void init(const std::string &path);
-
-  scene_ptr currentScene();
-
-public:
-  GameEngine(const std::string &path);
-  void run();
   void update();
-  void quit();
+  void sUserInput();
+  scene_ptr currentScene();
   void setCurrentScene(std::string scene);
   void addScene(std::string sceneName, scene_ptr scene);
   void endActualScene();
   void changeScene(std::string sceneName, scene_ptr scene,
                    bool endScene = false);
+
+public:
+  GameEngine(const std::string &path);
+  void run();
+  void quit();
 
   const Assets &assets() const;
   sf::RenderWindow &window();

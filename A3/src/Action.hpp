@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <utility>
 
 class Action {
   std::string m_name = "None";
@@ -7,9 +8,9 @@ class Action {
 
 public:
   Action() = default;
-  Action(const std::string &name, const std::string &type)
-      : m_name(name), m_type(type) {}
+  Action(std::string name, std::string type)
+      : m_name(std::move(name)), m_type(std::move(type)) {}
 
-  const std::string &name() { return m_name; }
-  const std::string &type() { return m_type; }
+  const std::string &name() const { return m_name; }
+  const std::string &type() const { return m_type; }
 };

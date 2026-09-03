@@ -1,6 +1,9 @@
 #include "GameEngine.h"
+#include "Action.hpp"
 #include "Scene_Play.h"
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Window/Event.hpp>
+#include <utility>
 
 void GameEngine::init(const std::string &path) {
   m_window.create(sf::VideoMode({1280, 960}), "Not Mario");
@@ -17,6 +20,7 @@ GameEngine::GameEngine(const std::string &path) { init(path); }
 
 void GameEngine::run() {
   while (m_running) {
+    sUserInput();
     update();
     m_window.display();
   }
@@ -29,7 +33,33 @@ void GameEngine::quit() {
   m_window.close();
 };
 
-void GameEngine::sUserInput() {}
+void GameEngine::sUserInput() {
+  while (const std::optional event = m_window.pollEvent()) {
+    if (event->is<sf::Event::Closed>()) {
+      quit();
+    }
+
+    std::optional<int> key;
+    std::string type;
+
+    if (const auto *keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+      key = static_cast<int>(keyPressed->code);
+      type = "START";
+    } else if (const auto *keyReleased =
+                   event->getIf<sf::Event::KeyReleased>()) {
+      key = static_cast<int>(keyReleased->code);
+      type = "END";
+    }
+
+    if (key.has_value()) {
+      const auto &map = currentScene()->actionMap();
+      if (auto it = map.find(key.value()); it != map.end()) {
+        Action action(it->second, std::move(type));
+        currentScene()->doAction(action);
+      }
+    }
+  }
+}
 
 void GameEngine::setCurrentScene(std::string scene) {
   m_scene = std::move(scene);

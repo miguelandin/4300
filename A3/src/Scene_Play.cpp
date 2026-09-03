@@ -15,6 +15,8 @@ void Scene_Play::init(const std::string &levelPath) {
   registerAction(sf::Keyboard::Scancode::T, "TOGGLE_TEXTURE");
   registerAction(sf::Keyboard::Scancode::C, "TOGGLE_COLLISION");
   registerAction(sf::Keyboard::Scancode::G, "TOGGLE_GRID");
+  registerAction(sf::Keyboard::Scancode::Space, "JUMP");
+  registerAction(sf::Keyboard::Scancode::W, "JUMP");
 
   // TODO register all gameplay actions
   loadLevel(levelPath);
@@ -68,8 +70,7 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entities.addEntity("Player");
   }
 
-  m_player->add<CAnimation>(m_game->assets().getAnimation("QuestionBlock"),
-                            true);
+  m_player->add<CAnimation>(m_game->assets().getAnimation("Stand"), true);
   m_player->add<CTransform>(sf::Vector2f(224, 352));
   m_player->add<CBoundingBox>(sf::Vector2f(48, 48));
   m_player->add<CState>("Stand");
@@ -137,4 +138,10 @@ void Scene_Play::sRender() {
   }
 }
 
-void Scene_Play::sDoAction(const Action &action) {}
+void Scene_Play::sDoAction(const Action &action) {
+  if (action.type() == "START") {
+    if (action.name() == "JUMP") {
+      std::cout << "JUMP" << std::endl;
+    }
+  }
+}

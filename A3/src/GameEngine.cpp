@@ -39,22 +39,20 @@ void GameEngine::sUserInput() {
       quit();
     }
 
-    std::optional<int> key;
-    std::string type;
+    std::optional<sf::Keyboard::Key> key;
+    bool type;
 
     if (const auto *keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-      key = static_cast<int>(keyPressed->code);
-      type = "START";
+      key = keyPressed->code;
     } else if (const auto *keyReleased =
                    event->getIf<sf::Event::KeyReleased>()) {
-      key = static_cast<int>(keyReleased->code);
-      type = "END";
+      key = keyReleased->code;
     }
 
     if (key.has_value()) {
       const auto &map = currentScene()->actionMap();
       if (auto it = map.find(key.value()); it != map.end()) {
-        Action action(it->second, std::move(type));
+        Action action(it->second, type);
         currentScene()->doAction(action);
       }
     }

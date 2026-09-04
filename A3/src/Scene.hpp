@@ -5,7 +5,7 @@
 
 class GameEngine;
 
-using ActionMap = std::map<int, std::string>;
+using ActionMap = std::map<sf::Keyboard::Key, std::string>;
 
 class Scene {
 protected:
@@ -18,8 +18,8 @@ protected:
   Scene() = default;
   explicit Scene(GameEngine *gameEngine) : m_game(gameEngine) {}
 
-  void registerAction(sf::Keyboard::Scancode code, std::string name) {
-    m_actionMap.emplace(static_cast<int>(code), std::move(name));
+  void registerAction(sf::Keyboard::Key code, std::string name) {
+    m_actionMap.emplace(code, std::move(name));
   }
 
   virtual void sDoAction(const Action &action) = 0;

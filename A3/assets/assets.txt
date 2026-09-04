@@ -4,3 +4,7 @@ Texture Bush assets/bush.png
 Animation Bush Bush 2 25
 Texture Stand assets/stand.png
 Animation Stand Stand 6 5
+Texture Run assets/run.png
+Animation Run Run 10 5
+Texture Jump assets/jump.png
+Animation Jump Jump 6 5

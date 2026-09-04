@@ -4,7 +4,9 @@
 #include "EntityManager.hpp"
 #include "Scene.hpp"
 #include <SFML/System/Vector2.hpp>
+#include <SFML/Window/Keyboard.hpp>
 #include <cassert>
+#include <iostream>
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
     : Scene(gameEngine), m_levelPath(levelPath) {
@@ -12,15 +14,24 @@ Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
 }
 
 void Scene_Play::init(const std::string &levelPath) {
-  registerAction(sf::Keyboard::Scancode::P, "PAUSE");
-  registerAction(sf::Keyboard::Scancode::Escape, "QUIT");
-  registerAction(sf::Keyboard::Scancode::T, "TOGGLE_TEXTURE");
-  registerAction(sf::Keyboard::Scancode::C, "TOGGLE_COLLISION");
-  registerAction(sf::Keyboard::Scancode::G, "TOGGLE_GRID");
-  registerAction(sf::Keyboard::Scancode::Space, "JUMP");
-  registerAction(sf::Keyboard::Scancode::W, "JUMP");
+  registerAction(sf::Keyboard::Key::P, "pause");
+  registerAction(sf::Keyboard::Key::Escape, "quit");
+  registerAction(sf::Keyboard::Key::T, "toggle_texture");
+  registerAction(sf::Keyboard::Key::C, "toggle_collision");
+  registerAction(sf::Keyboard::Key::G, "toggle_grid");
 
-  // TODO register all gameplay actions
+  registerAction(sf::Keyboard::Key::Up, "jump");
+  registerAction(sf::Keyboard::Key::Left, "left");
+  registerAction(sf::Keyboard::Key::Right, "right");
+  registerAction(sf::Keyboard::Key::S, "shoot");
+
+  registerAction(sf::Keyboard::Key::W, "jump");
+  registerAction(sf::Keyboard::Key::A, "left");
+  registerAction(sf::Keyboard::Key::D, "right");
+  registerAction(sf::Keyboard::Key::K, "shoot");
+
+  registerAction(sf::Keyboard::Key::Space, "jump");
+
   loadLevel(levelPath);
 }
 
@@ -67,7 +78,7 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entities.addEntity("Player");
   }
 
-  m_player->add<CAnimation>(m_game->assets().getAnimation("Stand"), true);
+  m_player->add<CAnimation>(m_game->assets().getAnimation("Jump"), true);
   m_player->add<CTransform>(gridToMidPixel(0, 1, m_player));
   m_player->add<CBoundingBox>(sf::Vector2f(48, 48));
   m_player->add<CState>("Stand");
@@ -136,9 +147,20 @@ void Scene_Play::sRender() {
 }
 
 void Scene_Play::sDoAction(const Action &action) {
-  if (action.type() == "START") {
-    if (action.name() == "JUMP") {
-      std::cout << "JUMP" << std::endl;
-    }
+  auto &input = m_player->get<CInput>();
+  assert(input.exists && "[!] CInput required for the player entity");
+  bool type = action.type();
+  if (action.name() == "jump") {
+    std::cout << "JUMP" << std::endl;
+    input.up = type;
+  } else if (action.name() == "right") {
+    std::cout << "right" << std::endl;
+    input.right = type;
+  } else if (action.name() == "left") {
+    std::cout << "left" << std::endl;
+    input.left = type;
+  } else if (action.name() == "shoot") {
+    std::cout << "shoot" << std::endl;
+    input.shoot = true;
   }
 }

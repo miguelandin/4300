@@ -21,16 +21,20 @@ void Scene_Play::init(const std::string &levelPath) {
   registerAction(sf::Keyboard::Key::G, "toggle_grid");
 
   registerAction(sf::Keyboard::Key::Up, "jump");
-  registerAction(sf::Keyboard::Key::Left, "left");
-  registerAction(sf::Keyboard::Key::Right, "right");
-  registerAction(sf::Keyboard::Key::S, "shoot");
-
-  registerAction(sf::Keyboard::Key::W, "jump");
-  registerAction(sf::Keyboard::Key::A, "left");
-  registerAction(sf::Keyboard::Key::D, "right");
-  registerAction(sf::Keyboard::Key::K, "shoot");
-
   registerAction(sf::Keyboard::Key::Space, "jump");
+  registerAction(sf::Keyboard::Key::W, "jump");
+
+  registerAction(sf::Keyboard::Key::Left, "left");
+  registerAction(sf::Keyboard::Key::A, "left");
+
+  registerAction(sf::Keyboard::Key::Right, "right");
+  registerAction(sf::Keyboard::Key::D, "right");
+
+  registerAction(sf::Keyboard::Key::Down, "down");
+  registerAction(sf::Keyboard::Key::S, "down");
+
+  registerAction(sf::Keyboard::Key::C, "shoot");
+  registerAction(sf::Keyboard::Key::LShift, "shoot");
 
   loadLevel(levelPath);
 }
@@ -38,7 +42,8 @@ void Scene_Play::init(const std::string &levelPath) {
 sf::Vector2f Scene_Play::gridToMidPixel(float gridX, float gridY,
                                         entity_ptr entity) {
   const auto &animation = entity->get<CAnimation>();
-  assert(animation.exists && "[!] Can't use without entity's CAnimation");
+  assert(animation.exists);
+
   auto size = animation.animation->size();
   return sf::Vector2f((m_gridSize.x * gridX) + (size.x / 2.0f),
                       m_game->window().getSize().y -
@@ -78,7 +83,7 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entities.addEntity("Player");
   }
 
-  m_player->add<CAnimation>(m_game->assets().getAnimation("run"), true);
+  m_player->add<CAnimation>(m_game->assets().getAnimation("stand"), true);
   m_player->add<CTransform>(gridToMidPixel(0, 0, m_player),
                             sf::Vector2f(7.5f, 7.5f), sf::Vector2f(1.0f, 1.0f),
                             0.0f);
@@ -101,6 +106,7 @@ void Scene_Play::update() {
   sMovement();
   sLifeSpan();
   sCollision();
+  sState();
   sAnimation();
   sRender();
 }
@@ -109,9 +115,7 @@ void Scene_Play::sMovement() {
   auto &input = m_player->get<CInput>();
   auto &transform = m_player->get<CTransform>();
   auto &state = m_player->get<CState>();
-  assert(input.exists && "[!] CInput required for the player entity");
-  assert(transform.exists && "[!] CTransform required for the player entity");
-  assert(state.exists && "[!] CState required for the player entity");
+  assert(input.exists && transform.exists && state.exists);
 
   sf::Vector2f dir;
   if (input.right) {
@@ -123,15 +127,21 @@ void Scene_Play::sMovement() {
   if (input.up) {
     dir.y += -1.0f;
   }
+  if (input.down) {
+    dir.y += 1.0f;
+  }
 
   if (dir != sf::Vector2f(0, 0)) {
-    if (dir.x < 0) {
+    state.state = "run";
+    if (dir.x < 0) { // TODO mejorar
       transform.scale.x = -1.0f;
     } else {
       transform.scale.x = 1.0f;
     }
     transform.pos.x += dir.x * transform.velocity.x;
     transform.pos.y += dir.y * transform.velocity.y;
+  } else {
+    state.state = "stand";
   }
 
   // TODO Implement player movement/jumping based on its CInput component
@@ -180,9 +190,19 @@ void Scene_Play::sRender() {
   }
 }
 
+void Scene_Play::sState() {
+  auto &animation = m_player->get<CAnimation>();
+  auto &state = m_player->get<CState>();
+  assert(animation.exists && state.exists);
+
+  if (state.state != animation.animation->name()) {
+    m_player->add<CAnimation>(m_game->assets().getAnimation(state.state), true);
+  }
+}
+
 void Scene_Play::sDoAction(const Action &action) {
   auto &input = m_player->get<CInput>();
-  assert(input.exists && "[!] CInput required for the player entity");
+  assert(input.exists);
   bool type = action.type();
   if (action.name() == "jump") {
     input.up = type;
@@ -190,6 +210,8 @@ void Scene_Play::sDoAction(const Action &action) {
     input.right = type;
   } else if (action.name() == "left") {
     input.left = type;
+  } else if (action.name() == "down") {
+    input.down = type;
   } else if (action.name() == "shoot") {
     input.shoot = type;
   }

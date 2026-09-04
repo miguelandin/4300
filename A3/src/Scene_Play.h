@@ -34,6 +34,7 @@ protected:
   void sAnimation();
   void sRender() override;
   void sDoAction(const Action &action) override;
+  void sState();
 
 public:
   Scene_Play(GameEngine *gameEngine, const std::string &levelPath);

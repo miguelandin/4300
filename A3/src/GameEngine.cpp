@@ -44,9 +44,11 @@ void GameEngine::sUserInput() {
 
     if (const auto *keyPressed = event->getIf<sf::Event::KeyPressed>()) {
       key = keyPressed->code;
+      type = true;
     } else if (const auto *keyReleased =
                    event->getIf<sf::Event::KeyReleased>()) {
       key = keyReleased->code;
+      type = false;
     }
 
     if (key.has_value()) {

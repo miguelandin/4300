@@ -1,10 +1,14 @@
-Texture QuestionBlock assets/question-block.png
-Animation QuestionBlock QuestionBlock 2 25
-Texture Bush assets/bush.png
-Animation Bush Bush 2 25
-Texture Stand assets/stand.png
-Animation Stand Stand 6 5
-Texture Run assets/run.png
-Animation Run Run 10 5
-Texture Jump assets/jump.png
-Animation Jump Jump 6 5
+Texture question-block assets/question-block.png
+Animation question-block question-block 2 25
+Texture bush assets/bush.png
+Animation bush bush 2 25
+Texture stand assets/stand.png
+Animation stand stand 6 5
+Texture run assets/run.png
+Animation run run 10 5
+Texture jump assets/jump.png
+Animation jump jump 6 5
+Texture fall assets/fall.png
+Animation fall fall 4 5
+Texture land assets/land.png
+Animation land land 4 5

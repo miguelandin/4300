@@ -57,19 +57,19 @@ void Scene_Play::loadLevel(const std::string &filename) {
   spawnPlayer();
 
   auto brick = m_entities.addEntity("tile");
-  brick->add<CAnimation>(m_game->assets().getAnimation("QuestionBlock"), true);
+  brick->add<CAnimation>(m_game->assets().getAnimation("question-block"), true);
   brick->add<CTransform>(gridToMidPixel(0, 0, brick));
   // NOTE: Your final code should position the entity using the gridToMidPixel
   // func read from the levelFile
   // brick->add<CTransform>(gridToMidPixel(gridX,gridY,brick));
   brick->add<CBoundingBox>(
-      m_game->assets().getAnimation("QuestionBlock").size());
-  if (brick->get<CAnimation>().animation->name() == "QuestionBlock") {
+      m_game->assets().getAnimation("question-block").size());
+  if (brick->get<CAnimation>().animation->name() == "question-block") {
     // this is a good way for identifying if a tile is a brick!
   }
 
   auto bush = m_entities.addEntity("bush");
-  bush->add<CAnimation>(m_game->assets().getAnimation("Bush"), true);
+  bush->add<CAnimation>(m_game->assets().getAnimation("bush"), true);
   bush->add<CTransform>(gridToMidPixel(10, 0, bush));
 }
 
@@ -78,10 +78,12 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entities.addEntity("Player");
   }
 
-  m_player->add<CAnimation>(m_game->assets().getAnimation("Jump"), true);
-  m_player->add<CTransform>(gridToMidPixel(0, 1, m_player));
+  m_player->add<CAnimation>(m_game->assets().getAnimation("run"), true);
+  m_player->add<CTransform>(gridToMidPixel(0, 1, m_player),
+                            sf::Vector2f(7.5f, 7.5f), sf::Vector2f(1.0f, 1.0f),
+                            0.0f);
   m_player->add<CBoundingBox>(sf::Vector2f(48, 48));
-  m_player->add<CState>("Stand");
+  m_player->add<CState>("stand");
   m_player->add<CInput>();
   // TODO be sure to add the remaining components to the player (read from
   // m_playerConfig)
@@ -104,26 +106,51 @@ void Scene_Play::update() {
 }
 
 void Scene_Play::sMovement() {
+  auto &input = m_player->get<CInput>();
+  auto &transform = m_player->get<CTransform>();
+  auto &state = m_player->get<CState>();
+  assert(input.exists && "[!] CInput required for the player entity");
+  assert(transform.exists && "[!] CTransform required for the player entity");
+  assert(state.exists && "[!] CState required for the player entity");
+
+  sf::Vector2f dir;
+  if (input.right) {
+    dir.x += 1.0f;
+  }
+  if (input.left) {
+    dir.x -= 1.0f;
+  }
+  if (input.up) {
+    dir.y += -1.0f;
+  }
+
+  if (dir != sf::Vector2f(0, 0)) {
+    transform.pos.x += dir.x * transform.velocity.x;
+    transform.pos.y += dir.y * transform.velocity.y;
+  }
+
   // TODO Implement player movement/jumping based on its CInput component
   // TODO Implement gravity's effect on the player
   // TODO Implement the maximum player speed in booth X and Y directions
   // NOTE: Settings an entity's scale.x to -1/1 will make it face to the
   // left/right
 }
+
 void Scene_Play::sLifeSpan() {
   // TODO same as A2
 }
 void Scene_Play::sCollision() {
-  // REMEMBER: SFML (0,0) position is on the TOP LEFT CORNER this means jumping
-  // will have a positive y-component Also, something BELOW something else will
-  // have a y value GREATER than it Also, something ABOVE something else will
-  // have a y value LESS than it
-  // TODO: Implement Physics::GetOverlap() function, use it inside this function
+  // REMEMBER: SFML (0,0) position is on the TOP LEFT CORNER this means
+  // jumping will have a positive y-component Also, something BELOW something
+  // else will have a y value GREATER than it Also, something ABOVE something
+  // else will have a y value LESS than it
+  // TODO: Implement Physics::GetOverlap() function, use it inside this
+  // function
   // TODO: Implement bullet / tile collisions
   //       destroy the tile if it has a Brick animation
-  // TODO: Implement player / tile collisions and resolutions update the CState
-  // component of the player to store wether it is currently on the ground or in
-  // the air. this will be used by the animatin system
+  // TODO: Implement player / tile collisions and resolutions update the
+  // CState component of the player to store wether it is currently on the
+  // ground or in the air. this will be used by the animatin system
   // TODO: Check to see if the player has fallen down a hole (y > height())
   // TODO: Don't let the player walk of the left side of the map
 }
@@ -151,16 +178,12 @@ void Scene_Play::sDoAction(const Action &action) {
   assert(input.exists && "[!] CInput required for the player entity");
   bool type = action.type();
   if (action.name() == "jump") {
-    std::cout << "JUMP" << std::endl;
     input.up = type;
   } else if (action.name() == "right") {
-    std::cout << "right" << std::endl;
     input.right = type;
   } else if (action.name() == "left") {
-    std::cout << "left" << std::endl;
     input.left = type;
   } else if (action.name() == "shoot") {
-    std::cout << "shoot" << std::endl;
-    input.shoot = true;
+    input.shoot = type;
   }
 }

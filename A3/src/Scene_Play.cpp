@@ -79,7 +79,7 @@ void Scene_Play::spawnPlayer() {
   }
 
   m_player->add<CAnimation>(m_game->assets().getAnimation("run"), true);
-  m_player->add<CTransform>(gridToMidPixel(0, 1, m_player),
+  m_player->add<CTransform>(gridToMidPixel(0, 0, m_player),
                             sf::Vector2f(7.5f, 7.5f), sf::Vector2f(1.0f, 1.0f),
                             0.0f);
   m_player->add<CBoundingBox>(sf::Vector2f(48, 48));
@@ -125,6 +125,11 @@ void Scene_Play::sMovement() {
   }
 
   if (dir != sf::Vector2f(0, 0)) {
+    if (dir.x < 0) {
+      transform.scale.x = -1.0f;
+    } else {
+      transform.scale.x = 1.0f;
+    }
     transform.pos.x += dir.x * transform.velocity.x;
     transform.pos.y += dir.y * transform.velocity.y;
   }
@@ -167,7 +172,9 @@ void Scene_Play::sRender() {
   for (auto &e : m_entities.getEntities()) {
     if (e->has<CAnimation>() && e->has<CTransform>()) {
       auto sprite = e->get<CAnimation>().animation->sprite();
-      sprite.setPosition(e->get<CTransform>().pos);
+      sprite.scale(e->get<CTransform>().scale);
+      auto pos = e->get<CTransform>().pos;
+      sprite.setPosition({std::round(pos.x), std::round(pos.y)});
       m_game->window().draw(sprite);
     }
   }

@@ -62,14 +62,14 @@ void Scene_Play::loadLevel(const std::string &filename) {
   spawnPlayer();
 
   auto brick = m_entities.addEntity("tile");
-  brick->add<CAnimation>(m_game->assets().getAnimation("question-block"), true);
+  brick->add<CAnimation>(m_game->assets().getAnimation("question_block"), true);
   brick->add<CTransform>(gridToMidPixel(0, 0, brick));
   // NOTE: Your final code should position the entity using the gridToMidPixel
   // func read from the levelFile
   // brick->add<CTransform>(gridToMidPixel(gridX,gridY,brick));
   brick->add<CBoundingBox>(
-      m_game->assets().getAnimation("question-block").size());
-  if (brick->get<CAnimation>().animation->name() == "question-block") {
+      m_game->assets().getAnimation("question_block").size());
+  if (brick->get<CAnimation>().animation->name() == "question_block") {
     // this is a good way for identifying if a tile is a brick!
   }
 

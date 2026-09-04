@@ -1,5 +1,5 @@
-Texture question-block assets/question-block.png
-Animation question-block question-block 2 25
+Texture question_block assets/question_block.png
+Animation question_block question_block 2 25
 Texture bush assets/bush.png
 Animation bush bush 2 25
 Texture stand assets/stand.png

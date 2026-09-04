@@ -68,27 +68,39 @@ public:
 
   void loadFromFile(const std::string &path) {
     std::ifstream file(path);
-    std::string str;
+    std::string line;
 
-    while (file >> str) {
-      if (str == "Texture") {
-        std::string name, path;
-        file >> name >> path;
-        addTexture(std::move(name), std::move(path));
-      } else if (str == "Animation") {
-        std::string name, texture;
+    while (std::getline(file, line)) {
+      std::istringstream iss(line);
+      std::string type;
+
+      if (!(iss >> type)) {
+        continue;
+      }
+
+      if (type == "Texture") {
+        std::string name, filePath;
+        iss >> name >> filePath;
+        addTexture(std::move(name), std::move(filePath));
+
+      } else if (type == "Animation") {
+        std::string name, texture, repeat;
         int frames, speed;
-        file >> name >> texture >> frames >> speed;
-        Animation animation(name, getTexture(texture), frames, speed);
+        bool loop = true;
+        iss >> name >> texture >> frames >> speed >> repeat;
+        if (repeat == "no_repeat") { loop = false; }
+        Animation animation(name, getTexture(texture), frames, speed, loop);
         addAnimation(std::move(name), std::move(animation));
-      } else if (str == "Font") {
-        std::string name, path;
-        file >> name >> path;
-        addFont(std::move(name), std::move(path));
-      } else if (str == "Sound") {
-        std::string name, path;
-        file >> name >> path;
-        addSound(std::move(name), std::move(path));
+
+      } else if (type == "Font") {
+        std::string name, filePath;
+        iss >> name >> filePath;
+        addFont(std::move(name), std::move(filePath));
+
+      } else if (type == "Sound") {
+        std::string name, filePath;
+        iss >> name >> filePath;
+        addSound(std::move(name), std::move(filePath));
       }
     }
   }

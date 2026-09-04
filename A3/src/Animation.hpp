@@ -13,12 +13,13 @@ class Animation {
   int m_currentFrame;
   int m_speed;
   sf::Vector2i m_size;
+  bool m_loop;
 
 public:
   Animation(const std::string &name, const sf::Texture &texture, int frameCount,
-            int speed)
+            int speed, bool repeat)
       : m_name(name), m_sprite(texture), m_frameCount(frameCount),
-        m_currentFrame(0), m_speed(speed) {
+        m_currentFrame(0), m_speed(speed), m_loop(repeat) {
 
     m_frameCount = std::max(1, m_frameCount);
     m_speed = std::max(1, m_speed);
@@ -30,16 +31,21 @@ public:
   };
 
   void update() {
-    int animFrame = (++m_currentFrame / m_speed) % m_frameCount;
-    sf::IntRect rectangle{{animFrame * m_size.x, 0}, m_size};
-    m_sprite.setTextureRect(rectangle);
+    if (!m_loop && hasEnded()) {
+      return;
+    }
+
+    int animFrame = ++m_currentFrame / m_speed;
+    if (!m_loop && animFrame >= m_frameCount) {
+      animFrame = m_frameCount - 1;
+    } else {
+      animFrame = animFrame % m_frameCount;
+    }
+    m_sprite.setTextureRect(sf::IntRect{{animFrame * m_size.x, 0}, m_size});
   }
 
   bool hasEnded() const { return m_currentFrame / m_speed >= m_frameCount; }
-
   const std::string &name() const { return m_name; }
-
   const sf::Vector2i &size() const { return m_size; }
-
   const sf::Sprite &sprite() const { return m_sprite; }
 };

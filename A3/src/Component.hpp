@@ -60,11 +60,9 @@ public:
 class CAnimation : public Component {
 public:
   std::optional<Animation> animation;
-  bool repeat = false;
 
   CAnimation() = default;
-  CAnimation(Animation animation, bool r)
-      : animation(std::move(animation)), repeat(r) {}
+  CAnimation(Animation animation, bool r) : animation(std::move(animation)) {}
 };
 
 class CGravity : public Component {
@@ -77,7 +75,7 @@ public:
 
 class CState : public Component {
 public:
-  std::string state = "jumping";
+  std::string state = "stand";
 
   CState() = default;
   CState(std::string state) : state(std::move(state)) {}

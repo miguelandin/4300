@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -76,31 +77,31 @@ public:
 
       if (!(iss >> type)) {
         continue;
-      }
+      };
 
       if (type == "Texture") {
         std::string name, filePath;
         iss >> name >> filePath;
-        addTexture(std::move(name), std::move(filePath));
+        addTexture(name, filePath);
 
       } else if (type == "Animation") {
-        std::string name, texture, repeat;
+        std::string name, texture, no_repeat;
         int frames, speed;
         bool loop = true;
-        iss >> name >> texture >> frames >> speed >> repeat;
-        if (repeat == "no_repeat") { loop = false; }
+        iss >> name >> texture >> frames >> speed >> no_repeat;
+        if (no_repeat == "no_repeat") { loop = false; }
         Animation animation(name, getTexture(texture), frames, speed, loop);
         addAnimation(std::move(name), std::move(animation));
 
       } else if (type == "Font") {
         std::string name, filePath;
         iss >> name >> filePath;
-        addFont(std::move(name), std::move(filePath));
+        addFont(name, filePath);
 
       } else if (type == "Sound") {
         std::string name, filePath;
         iss >> name >> filePath;
-        addSound(std::move(name), std::move(filePath));
+        addSound(name, filePath);
       }
     }
   }

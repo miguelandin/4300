@@ -62,7 +62,7 @@ void Scene_Play::loadLevel(const std::string &filename) {
   spawnPlayer();
 
   auto brick = m_entities.addEntity("tile");
-  brick->add<CAnimation>(m_game->assets().getAnimation("question_block"), true);
+  brick->add<CAnimation>(m_game->assets().getAnimation("question_block"));
   brick->add<CTransform>(gridToMidPixel(0, 0, brick));
   // NOTE: Your final code should position the entity using the gridToMidPixel
   // func read from the levelFile
@@ -74,7 +74,7 @@ void Scene_Play::loadLevel(const std::string &filename) {
   }
 
   auto bush = m_entities.addEntity("bush");
-  bush->add<CAnimation>(m_game->assets().getAnimation("bush"), true);
+  bush->add<CAnimation>(m_game->assets().getAnimation("bush"));
   bush->add<CTransform>(gridToMidPixel(10, 0, bush));
 }
 
@@ -83,7 +83,7 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entities.addEntity("Player");
   }
 
-  m_player->add<CAnimation>(m_game->assets().getAnimation("stand"), true);
+  m_player->add<CAnimation>(m_game->assets().getAnimation("stand"));
   m_player->add<CTransform>(gridToMidPixel(0, 0, m_player),
                             sf::Vector2f(7.5f, 7.5f), sf::Vector2f(1.0f, 1.0f),
                             0.0f);
@@ -196,7 +196,7 @@ void Scene_Play::sState() {
   assert(animation.exists && state.exists);
 
   if (state.state != animation.animation->name()) {
-    m_player->add<CAnimation>(m_game->assets().getAnimation(state.state), true);
+    m_player->add<CAnimation>(m_game->assets().getAnimation(state.state));
   }
 }
 

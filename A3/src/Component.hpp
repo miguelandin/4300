@@ -62,7 +62,7 @@ public:
   std::optional<Animation> animation;
 
   CAnimation() = default;
-  CAnimation(Animation animation, bool r) : animation(std::move(animation)) {}
+  CAnimation(Animation animation) : animation(std::move(animation)) {}
 };
 
 class CGravity : public Component {

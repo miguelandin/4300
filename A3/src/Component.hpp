@@ -18,7 +18,7 @@ public:
   float angle;
 
   CTransform() = default;
-  CTransform(sf::Vector2f p) : pos(p) {}
+  CTransform(sf::Vector2f p) : pos(p), prevPos(p) {}
   CTransform(sf::Vector2f p, sf::Vector2f sp, sf::Vector2f sc, float a)
       : pos(p), prevPos(p), velocity(sp), scale(sc), angle(a) {}
 };

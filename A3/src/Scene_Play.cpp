@@ -8,6 +8,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <cassert>
+#include <cmath>
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
     : Scene(gameEngine), m_levelPath(levelPath) {
@@ -64,7 +65,7 @@ void Scene_Play::loadLevel(const std::string &filename) {
 
   auto brick = m_entities.addEntity("tile");
   brick->add<CAnimation>(m_game->assets().getAnimation("question_block"));
-  brick->add<CTransform>(gridToMidPixel(0, 0, brick));
+  brick->add<CTransform>(gridToMidPixel(5, 5, brick));
   // NOTE: Your final code should position the entity using the gridToMidPixel
   // func read from the levelFile
   // brick->add<CTransform>(gridToMidPixel(gridX,gridY,brick));
@@ -84,11 +85,13 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entities.addEntity("Player");
   }
 
-  m_player->add<CAnimation>(m_game->assets().getAnimation("stand"));
+  const auto &animation = m_game->assets().getAnimation("stand");
+  m_player->add<CAnimation>(animation);
   m_player->add<CTransform>(gridToMidPixel(0, 0, m_player),
                             sf::Vector2f(7.5f, 7.5f), sf::Vector2f(1.0f, 1.0f),
                             0.0f);
-  m_player->add<CBoundingBox>(sf::Vector2f(48, 48));
+  m_player->add<CBoundingBox>(
+      sf::Vector2f(animation.size().x * 0.9, animation.size().y * 0.9));
   m_player->add<CState>("stand");
   m_player->add<CInput>();
   // TODO be sure to add the remaining components to the player (read from
@@ -117,29 +120,20 @@ void Scene_Play::sMovement() {
   auto &state = m_player->get<CState>();
   assert(input.exists && transform.exists && state.exists);
 
-  sf::Vector2f dir;
-  if (input.right) {
-    dir.x += 1.0f;
-  }
-  if (input.left) {
-    dir.x -= 1.0f;
-  }
-  if (input.up) {
-    dir.y += -1.0f;
-  }
-  if (input.down) {
-    dir.y += 1.0f;
-  }
+  transform.velocity = sf::Vector2f();
+  transform.velocity.x += 7.5 * input.right;
+  transform.velocity.x -= 7.5 * input.left;
+  transform.velocity.y += 7.5 * input.down;
+  transform.velocity.y -= 7.5 * input.up;
 
-  if (dir != sf::Vector2f(0, 0)) {
+  if (transform.velocity != sf::Vector2f()) {
     state.state = "run";
-    if (dir.x < 0) { // TODO mejorar
-      transform.scale.x = -1.0f;
-    } else {
-      transform.scale.x = 1.0f;
+    if (transform.velocity.x != 0) {
+      transform.scale.x =
+          std::copysign(transform.scale.x, transform.velocity.x);
     }
-    transform.pos.x += dir.x * transform.velocity.x;
-    transform.pos.y += dir.y * transform.velocity.y;
+    transform.prevPos = transform.pos;
+    transform.pos += transform.velocity;
   } else {
     state.state = "stand";
   }
@@ -154,6 +148,7 @@ void Scene_Play::sMovement() {
 void Scene_Play::sLifeSpan() {
   // TODO same as A2
 }
+
 void Scene_Play::sCollision() {
   auto &state = m_player->get<CState>();
   auto &transform = m_player->get<CTransform>();
@@ -163,27 +158,48 @@ void Scene_Play::sCollision() {
     if (e == m_player) {
       continue;
     }
-    if (e->has<CBoundingBox>()) {
+    if (e->has<CBoundingBox>() && e->has<CTransform>()) {
+      auto &eTransform = e->get<CTransform>();
       auto overlap = Physics::getOverlap(m_player, e);
-      if (overlap.x > 0 && overlap.y > 0) {
-        transform.pos += overlap;
+
+      if (overlap.x > 0.001f && overlap.y > 0.001f) {
+        auto pOverlap = Physics::getPreviousOverlap(m_player, e);
+
+        if (pOverlap.x > pOverlap.y) {
+          if (transform.prevPos.y < eTransform.prevPos.y) { // TOP
+            transform.pos.y -= overlap.y;
+          } else { // BOTTOM
+            transform.pos.y += overlap.y;
+          }
+          transform.velocity.y = 0;
+        } else {
+          if (transform.prevPos.x < eTransform.prevPos.x) { // LEFT
+            transform.pos.x -= overlap.x;
+          } else { // RIGHT
+            transform.pos.x += overlap.x;
+          }
+          transform.velocity.x = 0;
+        }
       }
     }
+
+    // REMEMBER: SFML (0,0) position is on the TOP LEFT CORNER this means
+    // jumping will have a positive y-component Also, something BELOW
+    // something else will have a y value GREATER than it Also, something
+    // ABOVE something else will have a y value LESS than it
+    // TODO: Implement Physics::GetOverlap() function, use it inside this
+    // function
+    // TODO: Implement bullet / tile collisions
+    //       destroy the tile if it has a Brick animation
+    // TODO: Implement player / tile collisions and resolutions update the
+    // CState component of the player to store wether it is currently on the
+    // ground or in the air. this will be used by the animatin system
+    // TODO: Check to see if the player has fallen down a hole (y >
+    // height())
+    // TODO: Don't let the player walk of the left side of the map
   }
-  // REMEMBER: SFML (0,0) position is on the TOP LEFT CORNER this means
-  // jumping will have a positive y-component Also, something BELOW something
-  // else will have a y value GREATER than it Also, something ABOVE something
-  // else will have a y value LESS than it
-  // TODO: Implement Physics::GetOverlap() function, use it inside this
-  // function
-  // TODO: Implement bullet / tile collisions
-  //       destroy the tile if it has a Brick animation
-  // TODO: Implement player / tile collisions and resolutions update the
-  // CState component of the player to store wether it is currently on the
-  // ground or in the air. this will be used by the animatin system
-  // TODO: Check to see if the player has fallen down a hole (y > height())
-  // TODO: Don't let the player walk of the left side of the map
 }
+
 void Scene_Play::sAnimation() {
   auto &animation = m_player->get<CAnimation>();
   auto &state = m_player->get<CState>();

@@ -28,7 +28,7 @@ inline sf::Vector2f getOverlap(const std::shared_ptr<Entity> &a,
                           boundingB.halfSize);
 }
 
-inline sf::Vector2f GetPreviousOverlap(const std::shared_ptr<Entity> &a,
+inline sf::Vector2f getPreviousOverlap(const std::shared_ptr<Entity> &a,
                                        const std::shared_ptr<Entity> &b) {
   auto boundingA = a->get<CBoundingBox>();
   auto boundingB = b->get<CBoundingBox>();

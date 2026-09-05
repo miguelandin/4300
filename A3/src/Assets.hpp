@@ -49,7 +49,7 @@ class Assets {
 
   void addFont(const std::string &name, const std::string &path) {
     try {
-      m_fonts.emplace(std::move(name), std::move(path));
+      m_fonts.emplace(name, path);
     } catch (const std::exception &e) {
       std::cout << "[!] Error loading FONT" << std::endl;
       std::cout << "Name: " << name << ", path: " << path << std::endl;
@@ -75,9 +75,7 @@ public:
       std::istringstream iss(line);
       std::string type;
 
-      if (!(iss >> type)) {
-        continue;
-      };
+      if (!(iss >> type)) { continue; }
 
       if (type == "Texture") {
         std::string name, filePath;

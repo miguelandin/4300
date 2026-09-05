@@ -3,6 +3,7 @@
 #include "EntityManager.hpp"
 #include "GameEngine.h"
 #include "Scene.hpp"
+#include <SFML/Graphics/Vertex.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <string>
@@ -34,7 +35,11 @@ protected:
   void sAnimation();
   void sRender() override;
   void sDoAction(const Action &action) override;
-  void sState();
+
+  void drawLines(std::span<const sf::Vertex> points);
+  void drawCollision(const entity_ptr &entity);
+  void drawGrid();
+  void drawTextures(const entity_ptr &entity);
 
 public:
   Scene_Play(GameEngine *gameEngine, const std::string &levelPath);

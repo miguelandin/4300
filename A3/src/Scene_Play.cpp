@@ -2,11 +2,12 @@
 #include "Action.hpp"
 #include "Component.hpp"
 #include "EntityManager.hpp"
+#include "Physics.hpp"
 #include "Scene.hpp"
+#include <SFML/Graphics/PrimitiveType.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <cassert>
-#include <iostream>
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
     : Scene(gameEngine), m_levelPath(levelPath) {
@@ -17,8 +18,8 @@ void Scene_Play::init(const std::string &levelPath) {
   registerAction(sf::Keyboard::Key::P, "pause");
   registerAction(sf::Keyboard::Key::Escape, "quit");
   registerAction(sf::Keyboard::Key::T, "toggle_texture");
-  registerAction(sf::Keyboard::Key::C, "toggle_collision");
   registerAction(sf::Keyboard::Key::G, "toggle_grid");
+  registerAction(sf::Keyboard::Key::B, "toggle_collision");
 
   registerAction(sf::Keyboard::Key::Up, "jump");
   registerAction(sf::Keyboard::Key::Space, "jump");
@@ -106,7 +107,6 @@ void Scene_Play::update() {
   sMovement();
   sLifeSpan();
   sCollision();
-  sState();
   sAnimation();
   sRender();
 }
@@ -155,6 +155,21 @@ void Scene_Play::sLifeSpan() {
   // TODO same as A2
 }
 void Scene_Play::sCollision() {
+  auto &state = m_player->get<CState>();
+  auto &transform = m_player->get<CTransform>();
+  assert(state.exists && transform.exists);
+
+  for (auto &e : m_entities.getEntities()) {
+    if (e == m_player) {
+      continue;
+    }
+    if (e->has<CBoundingBox>()) {
+      auto overlap = Physics::getOverlap(m_player, e);
+      if (overlap.x > 0 && overlap.y > 0) {
+        transform.pos += overlap;
+      }
+    }
+  }
   // REMEMBER: SFML (0,0) position is on the TOP LEFT CORNER this means
   // jumping will have a positive y-component Also, something BELOW something
   // else will have a y value GREATER than it Also, something ABOVE something
@@ -170,6 +185,14 @@ void Scene_Play::sCollision() {
   // TODO: Don't let the player walk of the left side of the map
 }
 void Scene_Play::sAnimation() {
+  auto &animation = m_player->get<CAnimation>();
+  auto &state = m_player->get<CState>();
+  assert(animation.exists && state.exists);
+
+  if (state.state != animation.animation->name()) {
+    m_player->add<CAnimation>(m_game->assets().getAnimation(state.state));
+  }
+
   for (auto &e : m_entities.getEntities()) {
     if (e->has<CAnimation>()) {
       e->get<CAnimation>().animation->update();
@@ -180,23 +203,15 @@ void Scene_Play::sAnimation() {
 void Scene_Play::sRender() {
   m_game->window().clear({255, 255, 255});
   for (auto &e : m_entities.getEntities()) {
-    if (e->has<CAnimation>() && e->has<CTransform>()) {
-      auto sprite = e->get<CAnimation>().animation->sprite();
-      sprite.scale(e->get<CTransform>().scale);
-      auto pos = e->get<CTransform>().pos;
-      sprite.setPosition({std::round(pos.x), std::round(pos.y)});
-      m_game->window().draw(sprite);
+    if (m_drawTextures) {
+      drawTextures(e);
     }
-  }
-}
-
-void Scene_Play::sState() {
-  auto &animation = m_player->get<CAnimation>();
-  auto &state = m_player->get<CState>();
-  assert(animation.exists && state.exists);
-
-  if (state.state != animation.animation->name()) {
-    m_player->add<CAnimation>(m_game->assets().getAnimation(state.state));
+    if (m_drawCollision) {
+      drawCollision(e);
+    }
+    if (m_drawGrid) {
+      drawGrid();
+    }
   }
 }
 
@@ -214,5 +229,44 @@ void Scene_Play::sDoAction(const Action &action) {
     input.down = type;
   } else if (action.name() == "shoot") {
     input.shoot = type;
+  } else if (action.name() == "toggle_collision" && action.type()) {
+    m_drawCollision = !m_drawCollision;
+  } else if (action.name() == "toggle_texture" && action.type()) {
+    m_drawTextures = !m_drawTextures;
   }
 }
+
+void Scene_Play::drawLines(std::span<const sf::Vertex> points) {
+  assert(!points.empty());
+  m_game->window().draw(points.data(), points.size(),
+                        sf::PrimitiveType::LineStrip);
+}
+
+void Scene_Play::drawCollision(const entity_ptr &e) {
+  if (!e->has<CBoundingBox>() || !e->has<CTransform>()) {
+    return;
+  }
+  auto size = e->get<CBoundingBox>().halfSize;
+  auto pos = e->get<CTransform>().pos;
+  sf::Color color(sf::Color::Red);
+  sf::Vertex points[5] = {
+      sf::Vertex(sf::Vector2f(pos.x - size.x, pos.y + size.y), color),
+      sf::Vertex(sf::Vector2f(pos.x - size.x, pos.y - size.y), color),
+      sf::Vertex(sf::Vector2f(pos.x + size.x, pos.y - size.y), color),
+      sf::Vertex(sf::Vector2f(pos.x + size.x, pos.y + size.y), color),
+      sf::Vertex(sf::Vector2f(pos.x - size.x, pos.y + size.y), color)};
+
+  drawLines(points);
+}
+
+void Scene_Play::drawTextures(const entity_ptr &e) {
+  if (e->has<CAnimation>() && e->has<CTransform>()) {
+    auto sprite = e->get<CAnimation>().animation->sprite();
+    sprite.scale(e->get<CTransform>().scale);
+    auto pos = e->get<CTransform>().pos;
+    sprite.setPosition({std::round(pos.x), std::round(pos.y)});
+    m_game->window().draw(sprite);
+  }
+}
+
+void Scene_Play::drawGrid() {}

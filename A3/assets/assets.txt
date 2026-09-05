@@ -7,7 +7,7 @@ Animation stand stand 6 5
 Texture run assets/run.png
 Animation run run 10 5
 Texture jump assets/jump.png
-Animation jump jump 6 5
+Animation jump jump 6 5 no_repeate
 Texture fall assets/fall.png
 Animation fall fall 4 5
 Texture land assets/land.png

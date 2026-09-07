@@ -1,6 +1,8 @@
 #pragma once
 #include "Action.hpp"
+#include "Component.hpp"
 #include "EntityManager.hpp"
+#include <SFML/Graphics/Rect.hpp>
 #include <SFML/Window/Keyboard.hpp>
 
 class GameEngine;
@@ -23,7 +25,27 @@ protected:
   }
 
   virtual void sDoAction(const Action &action) = 0;
+
   virtual void sRender() = 0;
+
+  void sAnimation() {
+    for (auto &e : m_entities.getEntities()) {
+      if (!e->has<CAnimation>() || !e->has<CSprite>()) {
+        continue;
+      }
+
+      auto &a = e->get<CAnimation>().animation;
+      if (!a.loop && a.hasEnded()) {
+        continue;
+      }
+
+      a.currentFrame = a.loop ? (a.currentFrame + 1) % (a.frameCount * a.speed)
+                              : a.currentFrame + 1;
+      int animFrame = std::min(a.currentFrame / a.speed, a.frameCount - 1);
+      e->get<CSprite>().sprite->setTextureRect(
+          sf::IntRect({animFrame * a.size.x, 0}, a.size));
+    }
+  }
 
 public:
   ~Scene() = default;

@@ -1,8 +1,12 @@
 #pragma once
 #include "Animation.hpp"
+#include <SFML/Graphics/Rect.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <optional>
 #include <string>
+#include <utility>
 
 class Component {
 public:
@@ -46,24 +50,52 @@ public:
   CInput() = default;
 };
 
+class CAnimation : public Component {
+public:
+  Animation animation;
+
+  CAnimation() = default;
+  CAnimation(Animation animation) : animation(std::move(animation)) {}
+};
+
+class CSprite : public Component {
+public:
+  std::optional<sf::Sprite> sprite;
+  CSprite() = default;
+
+  CSprite(const sf::Texture &texture, int xTiles = 1, int yTiles = 1) : sprite(std::in_place, texture) {
+      sf::Vector2i size(texture.getSize().x*xTiles,texture.getSize().y*yTiles);
+      sprite->setTextureRect(sf::IntRect({0,0},size));
+      sprite->setOrigin({size.x/2.0f,size.y/2.0f});
+  }
+
+  CSprite(const CAnimation &cAnimation)
+      : sprite(std::in_place, *cAnimation.animation.texture) {
+    sprite->setTextureRect(sf::IntRect({0, 0}, cAnimation.animation.size));
+    sprite->setOrigin({cAnimation.animation.size.x / 2.0f, cAnimation.animation.size.y / 2.0f});
+  }
+};
+
 class CBoundingBox : public Component {
 public:
   sf::Vector2f size;
   sf::Vector2f halfSize;
 
   CBoundingBox() = default;
-  template <typename T>
-  CBoundingBox(const sf::Vector2<T> &s)
-      : size(s), halfSize(size.x / 2.0f, size.y / 2.0f) {}
+
+  CBoundingBox(const CSprite &cSprite)
+      : size(cSprite.sprite->getTextureRect().size),
+        halfSize(size.x / 2.0f, size.y / 2.0f) {}
+
+  CBoundingBox(const CSprite &cSprite, float wScale, float hScale)
+      : CBoundingBox(cSprite) {
+    size.x *= wScale;
+    size.y *= hScale;
+    halfSize = {size.x / 2.0f, size.y / 2.0f};
+  }
 };
 
-class CAnimation : public Component {
-public:
-  std::optional<Animation> animation;
 
-  CAnimation() = default;
-  CAnimation(Animation animation) : animation(std::move(animation)) {}
-};
 
 class CGravity : public Component {
 public:

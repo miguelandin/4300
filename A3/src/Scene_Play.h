@@ -27,12 +27,12 @@ protected:
   void loadLevel(const std::string &filename);
   sf::Vector2f gridToMidPixel(float gridX, float gridY, entity_ptr entity);
   void spawnPlayer();
-  void spawnBullet(entity_ptr entity);
+  void spawnBullet(const entity_ptr &entity);
 
   void sMovement();
   void sLifeSpan();
   void sCollision();
-  void sAnimation();
+  void sState();
   void sRender() override;
   void sDoAction(const Action &action) override;
 

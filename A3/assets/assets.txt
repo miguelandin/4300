@@ -12,3 +12,4 @@ Texture fall assets/fall.png
 Animation fall fall 4 5
 Texture land assets/land.png
 Animation land land 4 5
+Texture ground assets/ground.png repeated smooth

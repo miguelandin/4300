@@ -4,7 +4,7 @@
 #include <tuple>
 
 using ComponentTuple =
-    std::tuple<CTransform, CLifespan, CInput, CBoundingBox, CAnimation,
+    std::tuple<CTransform, CLifespan, CInput, CBoundingBox, CSprite, CAnimation,
                CGravity, CState>; // Components go here
 
 class Entity {

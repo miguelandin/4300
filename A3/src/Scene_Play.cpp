@@ -43,10 +43,10 @@ void Scene_Play::init(const std::string &levelPath) {
 
 sf::Vector2f Scene_Play::gridToMidPixel(float gridX, float gridY,
                                         entity_ptr entity) {
-  const auto &animation = entity->get<CAnimation>();
-  assert(animation.exists);
+  const auto &cSprite = entity->get<CSprite>();
+  assert(cSprite.exists);
 
-  auto size = animation.animation->size();
+  auto size = cSprite.sprite->getTextureRect().size;
   return sf::Vector2f((m_gridSize.x * gridX) + (size.x / 2.0f),
                       m_game->window().getSize().y -
                           ((m_gridSize.y * gridY) + (size.y / 2.0f)));
@@ -64,20 +64,28 @@ void Scene_Play::loadLevel(const std::string &filename) {
   spawnPlayer();
 
   auto brick = m_entities.addEntity("tile");
-  brick->add<CAnimation>(m_game->assets().getAnimation("question_block"));
+  auto animation =
+      brick->add<CAnimation>(m_game->assets().getAnimation("question_block"));
+  auto sprite = brick->add<CSprite>(animation);
+  brick->add<CBoundingBox>(sprite);
   brick->add<CTransform>(gridToMidPixel(5, 5, brick));
   // NOTE: Your final code should position the entity using the gridToMidPixel
   // func read from the levelFile
   // brick->add<CTransform>(gridToMidPixel(gridX,gridY,brick));
-  brick->add<CBoundingBox>(
-      m_game->assets().getAnimation("question_block").size());
-  if (brick->get<CAnimation>().animation->name() == "question_block") {
-    // this is a good way for identifying if a tile is a brick!
-  }
+  // if (brick->get<CSprite>().sprite->name() == "question_block") {
+  // this is a good way for identifying if a tile is a brick!
+  //}
 
   auto bush = m_entities.addEntity("bush");
-  bush->add<CAnimation>(m_game->assets().getAnimation("bush"));
+  auto animation1 =
+      bush->add<CAnimation>(m_game->assets().getAnimation("bush"));
+  auto sprite1 = bush->add<CSprite>(animation1);
   bush->add<CTransform>(gridToMidPixel(10, 0, bush));
+
+  auto dirt = m_entities.addEntity("dirt");
+  auto &sprite2 = dirt->add<CSprite>(m_game->assets().getTexture("ground"), 10);
+  dirt->add<CTransform>(gridToMidPixel(0, 0, dirt));
+  dirt->add<CBoundingBox>(sprite2);
 }
 
 void Scene_Play::spawnPlayer() {
@@ -85,20 +93,19 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entities.addEntity("Player");
   }
 
-  const auto &animation = m_game->assets().getAnimation("stand");
-  m_player->add<CAnimation>(animation);
-  m_player->add<CTransform>(gridToMidPixel(0, 0, m_player),
-                            sf::Vector2f(7.5f, 7.5f), sf::Vector2f(1.0f, 1.0f),
-                            0.0f);
-  m_player->add<CBoundingBox>(
-      sf::Vector2f(animation.size().x * 0.9, animation.size().y * 0.9));
-  m_player->add<CState>("stand");
+  const auto &state = m_player->add<CState>("stand").state;
+  const auto &animation =
+      m_player->add<CAnimation>(m_game->assets().getAnimation(state));
+  const auto &sprite = m_player->add<CSprite>(animation);
+  m_player->add<CBoundingBox>(sprite, 0.9f, 0.9f);
+  m_player->add<CTransform>(gridToMidPixel(0, 0, m_player));
   m_player->add<CInput>();
+
   // TODO be sure to add the remaining components to the player (read from
   // m_playerConfig)
 }
 
-void Scene_Play::spawnBullet(entity_ptr entity) {
+void Scene_Play::spawnBullet(const entity_ptr &entity) {
   // TODO spawn a bullet at the given entity, going the direction the entity is
   // facing
 }
@@ -106,10 +113,10 @@ void Scene_Play::spawnBullet(entity_ptr entity) {
 void Scene_Play::update() {
   m_entities.update();
   // TODO implement pause functionality
-
   sMovement();
   sLifeSpan();
   sCollision();
+  sState();
   sAnimation();
   sRender();
 }
@@ -155,31 +162,30 @@ void Scene_Play::sCollision() {
   assert(state.exists && transform.exists);
 
   for (auto &e : m_entities.getEntities()) {
-    if (e == m_player) {
+    if (!e->has<CBoundingBox>() || !e->has<CTransform>() || e == m_player) {
       continue;
     }
-    if (e->has<CBoundingBox>() && e->has<CTransform>()) {
-      auto &eTransform = e->get<CTransform>();
-      auto overlap = Physics::getOverlap(m_player, e);
 
-      if (overlap.x > 0.001f && overlap.y > 0.001f) {
-        auto pOverlap = Physics::getPreviousOverlap(m_player, e);
+    auto &eTransform = e->get<CTransform>();
+    auto overlap = Physics::getOverlap(m_player, e);
 
-        if (pOverlap.x > pOverlap.y) {
-          if (transform.prevPos.y < eTransform.prevPos.y) { // TOP
-            transform.pos.y -= overlap.y;
-          } else { // BOTTOM
-            transform.pos.y += overlap.y;
-          }
-          transform.velocity.y = 0;
-        } else {
-          if (transform.prevPos.x < eTransform.prevPos.x) { // LEFT
-            transform.pos.x -= overlap.x;
-          } else { // RIGHT
-            transform.pos.x += overlap.x;
-          }
-          transform.velocity.x = 0;
+    if (overlap.x > 0.001f && overlap.y > 0.001f) {
+      auto pOverlap = Physics::getPreviousOverlap(m_player, e);
+
+      if (pOverlap.x > pOverlap.y) {
+        if (transform.prevPos.y < eTransform.prevPos.y) { // TOP
+          transform.pos.y -= overlap.y;
+        } else { // BOTTOM
+          transform.pos.y += overlap.y;
         }
+        transform.velocity.y = 0;
+      } else {
+        if (transform.prevPos.x < eTransform.prevPos.x) { // LEFT
+          transform.pos.x -= overlap.x;
+        } else { // RIGHT
+          transform.pos.x += overlap.x;
+        }
+        transform.velocity.x = 0;
       }
     }
 
@@ -200,19 +206,15 @@ void Scene_Play::sCollision() {
   }
 }
 
-void Scene_Play::sAnimation() {
+void Scene_Play::sState() {
   auto &animation = m_player->get<CAnimation>();
   auto &state = m_player->get<CState>();
   assert(animation.exists && state.exists);
 
-  if (state.state != animation.animation->name()) {
-    m_player->add<CAnimation>(m_game->assets().getAnimation(state.state));
-  }
-
-  for (auto &e : m_entities.getEntities()) {
-    if (e->has<CAnimation>()) {
-      e->get<CAnimation>().animation->update();
-    }
+  if (state.state != animation.animation.name) {
+    const auto &animation =
+        m_player->add<CAnimation>(m_game->assets().getAnimation(state.state));
+    m_player->add<CSprite>(animation);
   }
 }
 
@@ -276,13 +278,16 @@ void Scene_Play::drawCollision(const entity_ptr &e) {
 }
 
 void Scene_Play::drawTextures(const entity_ptr &e) {
-  if (e->has<CAnimation>() && e->has<CTransform>()) {
-    auto sprite = e->get<CAnimation>().animation->sprite();
-    sprite.scale(e->get<CTransform>().scale);
-    auto pos = e->get<CTransform>().pos;
-    sprite.setPosition({std::round(pos.x), std::round(pos.y)});
-    m_game->window().draw(sprite);
+  if (!e->has<CSprite>() || !e->has<CTransform>()) {
+    return;
   }
+
+  auto &sprite = e->get<CSprite>().sprite;
+  auto &transform = e->get<CTransform>();
+  sprite->setScale(transform.scale);
+  sprite->setPosition(
+      {std::round(transform.pos.x), std::round(transform.pos.y)});
+  m_game->window().draw(*sprite);
 }
 
 void Scene_Play::drawGrid() {}

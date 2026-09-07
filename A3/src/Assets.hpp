@@ -24,7 +24,7 @@ class Assets {
   animations m_animations;
 
   void addTexture(const std::string &name, const std::string &path,
-                  bool smooth = false, bool repeated = false) {
+                  bool smooth, bool repeated) {
     try {
       sf::Texture texture(path);
       texture.setSmooth(smooth);
@@ -78,9 +78,14 @@ public:
       if (!(iss >> type)) { continue; }
 
       if (type == "Texture") {
-        std::string name, filePath;
+        std::string name, filePath, arg;
+        bool smooth = false, repeated = false;
         iss >> name >> filePath;
-        addTexture(name, filePath);
+        while(iss>>arg){
+            if(arg == "repeated") { repeated = true; }
+            else if(arg == "smooth") { smooth = true; } 
+        }
+        addTexture(name, filePath, smooth, repeated);
 
       } else if (type == "Animation") {
         std::string name, texture, no_repeat;

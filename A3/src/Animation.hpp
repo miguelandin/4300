@@ -1,51 +1,30 @@
 #pragma once
 #include <SFML/Graphics/Rect.hpp>
-#include <SFML/Graphics/RenderStates.hpp>
-#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <algorithm>
 #include <string>
 
 class Animation {
-  std::string m_name;
-  sf::Sprite m_sprite;
-  int m_frameCount;
-  int m_currentFrame;
-  int m_speed;
-  sf::Vector2i m_size;
-  bool m_loop;
-
 public:
+  std::string name = "NA";
+  int frameCount = 1;
+  int currentFrame = 0;
+  int speed = 1;
+  sf::Vector2i size;
+  bool loop = false;
+  const sf::Texture *texture = nullptr;
+
+  Animation() = default;
+
   Animation(const std::string &name, const sf::Texture &texture, int frameCount,
-            int speed, bool repeat)
-      : m_name(name), m_sprite(texture), m_frameCount(frameCount),
-        m_currentFrame(0), m_speed(speed), m_loop(repeat) {
+            int speed, bool loop)
+      : name(name), frameCount(std::max(1, frameCount)),
+        speed(std::max(1, speed)), loop(loop), texture(&texture) {
 
-    m_frameCount = std::max(1, m_frameCount);
-    m_speed = std::max(1, m_speed);
-
-    m_size = {m_sprite.getTextureRect().size.x / m_frameCount,
-              m_sprite.getTextureRect().size.y};
-    m_sprite.setTextureRect({{0, 0}, m_size});
-    m_sprite.setOrigin({m_size.x / 2.0f, m_size.y / 2.0f});
-  };
-
-  void update() {
-    if (!m_loop && hasEnded()) {
-      return;
-    }
-
-    int animFrame = ++m_currentFrame / m_speed;
-    if (!m_loop && animFrame >= m_frameCount) {
-      animFrame = m_frameCount - 1;
-    } else {
-      animFrame = animFrame % m_frameCount;
-    }
-    m_sprite.setTextureRect(sf::IntRect{{animFrame * m_size.x, 0}, m_size});
+    size = {static_cast<int>(texture.getSize().x) / frameCount,
+            static_cast<int>(texture.getSize().y)};
   }
 
-  bool hasEnded() const { return m_currentFrame / m_speed >= m_frameCount; }
-  const std::string &name() const { return m_name; }
-  const sf::Vector2i &size() const { return m_size; }
-  const sf::Sprite &sprite() const { return m_sprite; }
+  bool hasEnded() const { return currentFrame / speed >= frameCount; }
 };

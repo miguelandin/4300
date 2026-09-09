@@ -7,8 +7,10 @@
 #include <SFML/Graphics/PrimitiveType.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <vector>
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
     : Scene(gameEngine), m_levelPath(levelPath) {
@@ -80,10 +82,10 @@ void Scene_Play::loadLevel(const std::string &filename) {
   auto animation1 =
       bush->add<CAnimation>(m_game->assets().getAnimation("bush"));
   auto sprite1 = bush->add<CSprite>(animation1);
-  bush->add<CTransform>(gridToMidPixel(10, 0, bush));
+  bush->add<CTransform>(gridToMidPixel(10, 1, bush));
 
   auto dirt = m_entities.addEntity("dirt");
-  auto &sprite2 = dirt->add<CSprite>(m_game->assets().getTexture("ground"), 10);
+  auto &sprite2 = dirt->add<CSprite>(m_game->assets().getTexture("ground"), 20);
   dirt->add<CTransform>(gridToMidPixel(0, 0, dirt));
   dirt->add<CBoundingBox>(sprite2);
 }
@@ -100,6 +102,7 @@ void Scene_Play::spawnPlayer() {
   m_player->add<CBoundingBox>(sprite, 0.9f, 0.9f);
   m_player->add<CTransform>(gridToMidPixel(0, 0, m_player));
   m_player->add<CInput>();
+  m_player->add<CGravity>(1.0f);
 
   // TODO be sure to add the remaining components to the player (read from
   // m_playerConfig)
@@ -125,31 +128,57 @@ void Scene_Play::sMovement() {
   auto &input = m_player->get<CInput>();
   auto &transform = m_player->get<CTransform>();
   auto &state = m_player->get<CState>();
-  assert(input.exists && transform.exists && state.exists);
+  auto &gravity = m_player->get<CGravity>();
+  assert(input.exists && transform.exists && state.exists && gravity.exists);
 
-  transform.velocity = sf::Vector2f();
-  transform.velocity.x += 7.5 * input.right;
-  transform.velocity.x -= 7.5 * input.left;
-  transform.velocity.y += 7.5 * input.down;
-  transform.velocity.y -= 7.5 * input.up;
+  transform.velocity.x += 2.0f * input.right;
+  transform.velocity.x -= 2.0f * input.left;
 
-  if (transform.velocity != sf::Vector2f()) {
-    state.state = "run";
-    if (transform.velocity.x != 0) {
-      transform.scale.x =
-          std::copysign(transform.scale.x, transform.velocity.x);
-    }
-    transform.prevPos = transform.pos;
-    transform.pos += transform.velocity;
-  } else {
-    state.state = "stand";
+  if (input.right == input.left) {
+    float v = transform.velocity.x * 0.9f;
+    transform.velocity.x = v * (std::abs(v) >= 1.0f);
   }
 
-  // TODO Implement player movement/jumping based on its CInput component
-  // TODO Implement gravity's effect on the player
-  // TODO Implement the maximum player speed in booth X and Y directions
-  // NOTE: Settings an entity's scale.x to -1/1 will make it face to the
-  // left/right
+  if (!input.up) {
+    input.hasJumped = false;
+  }
+
+  input.canJump = gravity.airFrames < 6;
+  if (input.up && input.canJump && !input.hasJumped) {
+    transform.velocity.y = -26.0f;
+    gravity.airFrames = 100;
+    input.hasJumped = true;
+  }
+
+  transform.velocity.y += gravity.acc;
+
+  if (!input.up && transform.velocity.y < 0.0f) {
+    transform.velocity.y *= 0.5f;
+  }
+
+  transform.velocity.x = std::clamp(transform.velocity.x, -10.0f, 10.0f);
+  transform.velocity.y = std::clamp(transform.velocity.y, -64.0f, 64.0f);
+
+  transform.scale.x = std::copysign(
+      transform.scale.x,
+      transform.velocity.x != 0.0f ? transform.velocity.x : transform.scale.x);
+
+  transform.prevPos = transform.pos;
+  transform.pos += transform.velocity;
+
+  if (state.isGrounded) {
+    if (std::abs(transform.velocity.x) < 2.0f) {
+      state.state = "stand";
+    } else {
+      state.state = "run";
+    }
+  } else {
+    if (transform.velocity.y < 0.0f) {
+      state.state = "jump";
+    } else {
+      state.state = "fall";
+    }
+  }
 }
 
 void Scene_Play::sLifeSpan() {
@@ -159,8 +188,12 @@ void Scene_Play::sLifeSpan() {
 void Scene_Play::sCollision() {
   auto &state = m_player->get<CState>();
   auto &transform = m_player->get<CTransform>();
-  assert(state.exists && transform.exists);
+  auto &input = m_player->get<CInput>();
+  auto &gravity = m_player->get<CGravity>();
+  assert(state.exists && transform.exists && input.exists && gravity.exists);
 
+  gravity.airFrames++;
+  state.isGrounded = false;
   for (auto &e : m_entities.getEntities()) {
     if (!e->has<CBoundingBox>() || !e->has<CTransform>() || e == m_player) {
       continue;
@@ -175,6 +208,8 @@ void Scene_Play::sCollision() {
       if (pOverlap.x > pOverlap.y) {
         if (transform.prevPos.y < eTransform.prevPos.y) { // TOP
           transform.pos.y -= overlap.y;
+          gravity.airFrames = 0;
+          state.isGrounded = true;
         } else { // BOTTOM
           transform.pos.y += overlap.y;
         }
@@ -220,15 +255,23 @@ void Scene_Play::sState() {
 
 void Scene_Play::sRender() {
   m_game->window().clear({255, 255, 255});
-  for (auto &e : m_entities.getEntities()) {
-    if (m_drawTextures) {
-      drawTextures(e);
+
+  if (m_drawGrid) {
+    drawGrid();
+  }
+
+  if (m_drawTextures) {
+    for (auto &e : m_entities.getEntities()) {
+      if (e != m_player) {
+        drawTexture(e);
+      }
     }
-    if (m_drawCollision) {
+    drawTexture(m_player);
+  }
+
+  if (m_drawCollision) {
+    for (auto &e : m_entities.getEntities()) {
       drawCollision(e);
-    }
-    if (m_drawGrid) {
-      drawGrid();
     }
   }
 }
@@ -277,7 +320,7 @@ void Scene_Play::drawCollision(const entity_ptr &e) {
   drawLines(points);
 }
 
-void Scene_Play::drawTextures(const entity_ptr &e) {
+void Scene_Play::drawTexture(const entity_ptr &e) {
   if (!e->has<CSprite>() || !e->has<CTransform>()) {
     return;
   }

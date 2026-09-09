@@ -39,7 +39,7 @@ protected:
   void drawLines(std::span<const sf::Vertex> points);
   void drawCollision(const entity_ptr &entity);
   void drawGrid();
-  void drawTextures(const entity_ptr &entity);
+  void drawTexture(const entity_ptr &entity);
 
 public:
   Scene_Play(GameEngine *gameEngine, const std::string &levelPath);

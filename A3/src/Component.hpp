@@ -45,6 +45,7 @@ public:
   bool right = false;
   bool shoot = false;
   bool canShoot = false;
+  bool hasJumped = false;
   bool canJump = false;
 
   CInput() = default;
@@ -100,6 +101,7 @@ public:
 class CGravity : public Component {
 public:
   float acc = 0;
+  int airFrames = 0;
 
   CGravity() = default;
   CGravity(float g) : acc(g) {}
@@ -108,6 +110,7 @@ public:
 class CState : public Component {
 public:
   std::string state = "stand";
+  bool isGrounded = true;
 
   CState() = default;
   CState(std::string state) : state(std::move(state)) {}

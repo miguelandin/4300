@@ -5,11 +5,13 @@
 #include "Physics.hpp"
 #include "Scene.hpp"
 #include <SFML/Graphics/PrimitiveType.hpp>
+#include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <format>
 #include <vector>
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
@@ -167,7 +169,7 @@ void Scene_Play::sMovement() {
   transform.pos += transform.velocity;
 
   if (state.isGrounded) {
-    if (std::abs(transform.velocity.x) < 2.0f) {
+    if (std::abs(transform.velocity.x) < 5.0f) {
       state.state = "stand";
     } else {
       state.state = "run";
@@ -254,11 +256,7 @@ void Scene_Play::sState() {
 }
 
 void Scene_Play::sRender() {
-  m_game->window().clear({255, 255, 255});
-
-  if (m_drawGrid) {
-    drawGrid();
-  }
+  m_game->window().clear(sf::Color::Cyan);
 
   if (m_drawTextures) {
     for (auto &e : m_entities.getEntities()) {
@@ -269,6 +267,9 @@ void Scene_Play::sRender() {
     drawTexture(m_player);
   }
 
+  if (m_drawGrid) {
+    drawGrid();
+  }
   if (m_drawCollision) {
     for (auto &e : m_entities.getEntities()) {
       drawCollision(e);
@@ -294,10 +295,17 @@ void Scene_Play::sDoAction(const Action &action) {
     m_drawCollision = !m_drawCollision;
   } else if (action.name() == "toggle_texture" && action.type()) {
     m_drawTextures = !m_drawTextures;
+  } else if (action.name() == "toggle_grid" && action.type()) {
+    m_drawGrid = !m_drawGrid;
   }
 }
 
 void Scene_Play::drawLines(std::span<const sf::Vertex> points) {
+  assert(!points.empty());
+  m_game->window().draw(points.data(), points.size(), sf::PrimitiveType::Lines);
+}
+
+void Scene_Play::drawLineStrip(std::span<const sf::Vertex> points) {
   assert(!points.empty());
   m_game->window().draw(points.data(), points.size(),
                         sf::PrimitiveType::LineStrip);
@@ -317,7 +325,7 @@ void Scene_Play::drawCollision(const entity_ptr &e) {
       sf::Vertex(sf::Vector2f(pos.x + size.x, pos.y + size.y), color),
       sf::Vertex(sf::Vector2f(pos.x - size.x, pos.y + size.y), color)};
 
-  drawLines(points);
+  drawLineStrip(points);
 }
 
 void Scene_Play::drawTexture(const entity_ptr &e) {
@@ -333,4 +341,31 @@ void Scene_Play::drawTexture(const entity_ptr &e) {
   m_game->window().draw(*sprite);
 }
 
-void Scene_Play::drawGrid() {}
+void Scene_Play::drawGrid() {
+  std::vector<sf::Vertex> points;
+  sf::Color color(sf::Color::Black);
+  sf::Vector2f screen(m_game->window().getSize());
+
+  sf::Text t(m_game->assets().getFont("simple"));
+  t.setFillColor(color);
+  t.setCharacterSize(16);
+  for (float x = 0.0f; x < screen.x; x += m_gridSize.x) {
+    points.push_back(sf::Vertex({x, 0.0f}, color));
+    points.push_back(sf::Vertex({x, screen.y}, color));
+  }
+  for (float y = 0.0f; y < screen.y; y += m_gridSize.y) {
+    points.push_back(sf::Vertex({0.0f, y}, color));
+    points.push_back(sf::Vertex({screen.x, y}, color));
+  }
+
+  for (float x = 0.0f; x < screen.x; x += m_gridSize.x) {
+    for (float y = 0.0f; y < screen.y; y += m_gridSize.y) {
+      t.setPosition({x, y});
+      t.setString(std::format("({},{})", x / m_gridSize.x,
+                              (screen.y - y) / m_gridSize.y));
+      m_game->window().draw(t);
+    }
+  }
+
+  drawLines(points);
+}

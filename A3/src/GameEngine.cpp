@@ -6,7 +6,7 @@
 #include <utility>
 
 void GameEngine::init(const std::string &path) {
-  m_window.create(sf::VideoMode({1280, 960}), "Not Mario");
+  m_window.create(sf::VideoMode({1280, 960}), "Super Bro");
   m_window.setFramerateLimit(60);
   m_assets.loadFromFile(path);
   m_running = true;

@@ -37,6 +37,7 @@ protected:
   void sDoAction(const Action &action) override;
 
   void drawLines(std::span<const sf::Vertex> points);
+  void drawLineStrip(std::span<const sf::Vertex> points);
   void drawCollision(const entity_ptr &entity);
   void drawGrid();
   void drawTexture(const entity_ptr &entity);

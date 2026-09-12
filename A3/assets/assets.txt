@@ -13,3 +13,8 @@ Animation fall fall 4 5 no_repeate
 Texture land assets/land.png
 Animation land land 4 5
 Texture ground assets/ground.png repeated
+
+//FONTS
+Font pixel assets/pixel.otf
+Font simple assets/simple.otf
+

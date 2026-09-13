@@ -11,7 +11,6 @@ using scene_map = std::map<std::string, scene_ptr>;
 class GameEngine {
   scene_map m_scenes;
   sf::RenderWindow m_window;
-  Assets m_assets;
   std::string m_scene;
   bool m_running;
 

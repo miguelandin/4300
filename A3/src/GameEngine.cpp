@@ -8,7 +8,7 @@
 void GameEngine::init(const std::string &path) {
   m_window.create(sf::VideoMode({1280, 960}), "Super Bro");
   m_window.setFramerateLimit(60);
-  m_assets.loadFromFile(path);
+  Assets::instance().loadFromFile(path);
   m_running = true;
 
   changeScene("LEVEL1", std::make_shared<Scene_Play>(this, "NA"));
@@ -82,6 +82,6 @@ void GameEngine::changeScene(std::string sceneName, scene_ptr scene,
   setCurrentScene(std::move(sceneName));
 }
 
-const Assets &GameEngine::assets() const { return m_assets; }
+const Assets &GameEngine::assets() const { return Assets::instance(); }
 
 sf::RenderWindow &GameEngine::window() { return m_window; }

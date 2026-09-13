@@ -1,11 +1,12 @@
 #pragma once
 #include "Animation.hpp"
+#include "State.h"
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <memory>
 #include <optional>
-#include <string>
 #include <utility>
 
 class Component {
@@ -46,7 +47,7 @@ public:
   bool shoot = false;
   bool canShoot = false;
   bool hasJumped = false;
-  bool canJump = false;
+  bool canJump = true;
 
   CInput() = default;
 };
@@ -64,16 +65,19 @@ public:
   std::optional<sf::Sprite> sprite;
   CSprite() = default;
 
-  CSprite(const sf::Texture &texture, int xTiles = 1, int yTiles = 1) : sprite(std::in_place, texture) {
-      sf::Vector2i size(texture.getSize().x*xTiles,texture.getSize().y*yTiles);
-      sprite->setTextureRect(sf::IntRect({0,0},size));
-      sprite->setOrigin({size.x/2.0f,size.y/2.0f});
+  CSprite(const sf::Texture &texture, int xTiles = 1, int yTiles = 1)
+      : sprite(std::in_place, texture) {
+    sf::Vector2i size(texture.getSize().x * xTiles,
+                      texture.getSize().y * yTiles);
+    sprite->setTextureRect(sf::IntRect({0, 0}, size));
+    sprite->setOrigin({size.x / 2.0f, size.y / 2.0f});
   }
 
   CSprite(const CAnimation &cAnimation)
       : sprite(std::in_place, *cAnimation.animation.texture) {
     sprite->setTextureRect(sf::IntRect({0, 0}, cAnimation.animation.size));
-    sprite->setOrigin({cAnimation.animation.size.x / 2.0f, cAnimation.animation.size.y / 2.0f});
+    sprite->setOrigin({cAnimation.animation.size.x / 2.0f,
+                       cAnimation.animation.size.y / 2.0f});
   }
 };
 
@@ -96,12 +100,11 @@ public:
   }
 };
 
-
-
 class CGravity : public Component {
 public:
   float acc = 0;
   int airFrames = 0;
+  bool isGrounded = false;
 
   CGravity() = default;
   CGravity(float g) : acc(g) {}
@@ -109,9 +112,8 @@ public:
 
 class CState : public Component {
 public:
-  std::string state = "stand";
-  bool isGrounded = true;
+  std::unique_ptr<State> state = nullptr;
 
   CState() = default;
-  CState(std::string state) : state(std::move(state)) {}
+  CState(std::unique_ptr<State> state) : state(std::move(state)) {}
 };

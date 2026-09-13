@@ -23,8 +23,8 @@ class Assets {
   fonts m_fonts;
   animations m_animations;
 
-  void addTexture(const std::string &name, const std::string &path,
-                  bool smooth, bool repeated) {
+  void addTexture(const std::string &name, const std::string &path, bool smooth,
+                  bool repeated) {
     try {
       sf::Texture texture(path);
       texture.setSmooth(smooth);
@@ -63,9 +63,13 @@ class Assets {
 
   Assets(const Assets &) = delete;
   Assets &operator=(const Assets &) = delete;
+  Assets() = default;
 
 public:
-  Assets() = default;
+  static Assets &instance() {
+    static Assets assets;
+    return assets;
+  }
 
   void loadFromFile(const std::string &path) {
     std::ifstream file(path);
@@ -75,15 +79,20 @@ public:
       std::istringstream iss(line);
       std::string type;
 
-      if (!(iss >> type)) { continue; }
+      if (!(iss >> type)) {
+        continue;
+      }
 
       if (type == "Texture") {
         std::string name, filePath, arg;
         bool smooth = false, repeated = false;
         iss >> name >> filePath;
-        while(iss>>arg){
-            if(arg == "repeated") { repeated = true; }
-            else if(arg == "smooth") { smooth = true; } 
+        while (iss >> arg) {
+          if (arg == "repeated") {
+            repeated = true;
+          } else if (arg == "smooth") {
+            smooth = true;
+          }
         }
         addTexture(name, filePath, smooth, repeated);
 
@@ -92,7 +101,9 @@ public:
         int frames, speed;
         bool loop = true;
         iss >> name >> texture >> frames >> speed >> no_repeat;
-        if (no_repeat == "no_repeat") { loop = false; }
+        if (no_repeat == "no_repeat") {
+          loop = false;
+        }
         Animation animation(name, getTexture(texture), frames, speed, loop);
         addAnimation(std::move(name), std::move(animation));
 

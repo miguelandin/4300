@@ -7,11 +7,13 @@ Animation stand stand 6 5
 Texture run assets/run.png
 Animation run run 10 5
 Texture jump assets/jump.png
-Animation jump jump 6 5 no_repeate
+Animation jump jump 1 0
 Texture fall assets/fall.png
-Animation fall fall 4 5 no_repeate
-Texture land assets/land.png
-Animation land land 4 5
+Animation fall fall 4 5
+Texture land assets/land.png 
+Animation land land 4 5 no_repeat
+Texture crouch assets/crouch.png
+Animation crouch crouch 3 5 no_repeat
 Texture ground assets/ground.png repeated
 
 //FONTS

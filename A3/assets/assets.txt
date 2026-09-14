@@ -1,3 +1,4 @@
+//Animations
 Texture question_block assets/question_block.png
 Animation question_block question_block 2 25
 Texture bush assets/bush.png
@@ -14,6 +15,12 @@ Texture land assets/land.png
 Animation land land 4 5 no_repeat
 Texture crouch assets/crouch.png
 Animation crouch crouch 3 5 no_repeat
+Texture uncrouch assets/uncrouch.png
+Animation uncrouch uncrouch 3 5 no_repeat
+Texture crouch_idle assets/crouch_idle.png
+Animation crouch_idle crouch_idle 1 0
+
+//Textures
 Texture ground assets/ground.png repeated
 
 //FONTS

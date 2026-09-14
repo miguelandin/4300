@@ -44,3 +44,35 @@ public:
                                      const CInput &input) override;
   std::unique_ptr<State> update(Entity &entity) override;
 };
+
+class Land : public State {
+public:
+  void enter(Entity &entity) override;
+  std::unique_ptr<State> handleInput(Entity &entity,
+                                     const CInput &input) override;
+  std::unique_ptr<State> update(Entity &entity) override;
+};
+
+class Crouch : public State {
+public:
+  void enter(Entity &entity) override;
+  std::unique_ptr<State> handleInput(Entity &entity,
+                                     const CInput &input) override;
+  std::unique_ptr<State> update(Entity &entity) override;
+};
+
+class Uncrouch : public State {
+public:
+  void enter(Entity &entity) override;
+  std::unique_ptr<State> handleInput(Entity &entity,
+                                     const CInput &input) override;
+  std::unique_ptr<State> update(Entity &entity) override;
+};
+
+class CrouchIdle : public State {
+public:
+  void enter(Entity &entity) override;
+  std::unique_ptr<State> handleInput(Entity &entity,
+                                     const CInput &input) override;
+  std::unique_ptr<State> update(Entity &entity) override;
+};

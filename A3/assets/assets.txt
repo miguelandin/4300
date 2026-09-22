@@ -17,8 +17,10 @@ Texture crouch assets/crouch.png
 Animation crouch crouch 3 5 no_repeat
 Texture uncrouch assets/uncrouch.png
 Animation uncrouch uncrouch 3 5 no_repeat
+Texture crouch_walk assets/crouch_walk.png
+Animation crouch_walk crouch_walk 11 5
 Texture crouch_idle assets/crouch_idle.png
-Animation crouch_idle crouch_idle 1 0
+Animation crouch_idle crouch_idle 4 5
 
 //Textures
 Texture ground assets/ground.png repeated

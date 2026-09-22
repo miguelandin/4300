@@ -76,3 +76,11 @@ public:
                                      const CInput &input) override;
   std::unique_ptr<State> update(Entity &entity) override;
 };
+
+class CrouchWalk : public State {
+public:
+  void enter(Entity &entity) override;
+  std::unique_ptr<State> handleInput(Entity &entity,
+                                     const CInput &input) override;
+  std::unique_ptr<State> update(Entity &entity) override;
+};

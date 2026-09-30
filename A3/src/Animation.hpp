@@ -27,4 +27,6 @@ public:
   }
 
   bool hasEnded() const { return currentFrame / speed >= frameCount; }
+
+  int getFrameLength() const { return speed * frameCount; }
 };

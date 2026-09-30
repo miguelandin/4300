@@ -21,6 +21,8 @@ Texture crouch_walk assets/crouch_walk.png
 Animation crouch_walk crouch_walk 11 5
 Texture crouch_idle assets/crouch_idle.png
 Animation crouch_idle crouch_idle 4 5
+Texture slide assets/slide.png
+Animation slide slide 9 5
 
 //Textures
 Texture ground assets/ground.png repeated

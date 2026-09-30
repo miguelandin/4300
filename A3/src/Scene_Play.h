@@ -10,7 +10,9 @@
 
 class Scene_Play : public Scene {
   struct PlayerConfig {
-    float X, Y, CX, CY, SPEED, MAXSPEED, JUMP, GRAVITY;
+    float X, Y, CX, CY, SPEED, MAX_X_SPEED, MAX_Y_SPEED, JUMP, GRAVITY,
+        FRICTION;
+    int LANDING_DURATION, CROUCHING_DURATION;
     std::string weapon;
   };
 
@@ -33,6 +35,7 @@ protected:
   void sLifeSpan();
   void sCollision();
   void sState();
+  void sAnimation();
   void sRender() override;
   void sDoAction(const Action &action) override;
 

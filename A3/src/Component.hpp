@@ -1,13 +1,24 @@
 #pragma once
 #include "Animation.hpp"
-#include "State.h"
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Vector2.hpp>
-#include <memory>
 #include <optional>
 #include <utility>
+
+enum class State {
+  Idle,
+  Running,
+  Jumping,
+  Crouching,
+  Uncrouching,
+  Falling,
+  Landing,
+  CrouchWalking,
+  CrouchIdle,
+  Sliding,
+};
 
 class Component {
 public:
@@ -20,12 +31,14 @@ public:
   sf::Vector2f prevPos = {0.0, 0.0};
   sf::Vector2f scale = {1.0, 1.0};
   sf::Vector2f velocity = {0.0, 0.0};
+  sf::Vector2f preVelocity = {0.0, 0.0};
   float angle;
 
   CTransform() = default;
   CTransform(sf::Vector2f p) : pos(p), prevPos(p) {}
   CTransform(sf::Vector2f p, sf::Vector2f sp, sf::Vector2f sc, float a)
-      : pos(p), prevPos(p), velocity(sp), scale(sc), angle(a) {}
+      : pos(p), prevPos(p), velocity(sp), preVelocity(sp), scale(sc), angle(a) {
+  }
 };
 
 class CLifespan : public Component {
@@ -112,8 +125,10 @@ public:
 
 class CState : public Component {
 public:
-  std::unique_ptr<State> state = nullptr;
+  State state = State::Idle;
+  State prevState = State::Idle;
+  int stateTimer = 0;
 
   CState() = default;
-  CState(std::unique_ptr<State> state) : state(std::move(state)) {}
+  CState(State s) : state(s), prevState(s) {}
 };

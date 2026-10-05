@@ -4,7 +4,9 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <SFML/Window/WindowEnums.hpp>
 #include <optional>
+#include <unordered_map>
 #include <utility>
 
 enum class State {
@@ -19,6 +21,22 @@ enum class State {
   CrouchIdle,
   Sliding,
 };
+
+constexpr std::string_view stateToString(State state) {
+    switch (state) {
+        case State::Idle:          return "Idle";
+        case State::Running:       return "Running";
+        case State::Jumping:       return "Jumping";
+        case State::Falling:       return "Falling";
+        case State::Landing:       return "Landing";
+        case State::Crouching:     return "Crouching";
+        case State::Uncrouching:   return "Uncrouching";
+        case State::CrouchIdle:    return "CrouchIdle";
+        case State::CrouchWalking: return "CrouchWalking";
+        case State::Sliding:       return "Sliding";
+        default:                   return "Unknown";
+    }
+}
 
 class Component {
 public:
@@ -131,4 +149,11 @@ public:
 
   CState() = default;
   CState(State s) : state(s), prevState(s) {}
+};
+
+class CAnimationMap : public Component {
+public:
+  std::unordered_map<State, std::string> map;
+
+  CAnimationMap() = default;
 };

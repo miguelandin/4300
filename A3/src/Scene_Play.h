@@ -1,5 +1,6 @@
 #pragma once
 #include "Action.hpp"
+#include "Assets.hpp"
 #include "EntityManager.hpp"
 #include "GameEngine.h"
 #include "Scene.hpp"
@@ -10,9 +11,14 @@
 
 class Scene_Play : public Scene {
   struct PlayerConfig {
-    float X, Y, CX, CY, SPEED, MAX_X_SPEED, MAX_Y_SPEED, JUMP, GRAVITY,
-        FRICTION;
-    int LANDING_DURATION, CROUCHING_DURATION;
+    float X, Y, CX, CY, SPEED = 2.0f, MAX_X_SPEED = 10.0f, MAX_Y_SPEED = 64.0f,
+                        JUMP = -26.0f, GRAVITY, FRICTION = 0.9f;
+    int LANDING_DURATION =
+            Assets::instance().getAnimation("land").getFrameLength(),
+        CROUCHING_DURATION =
+            Assets::instance().getAnimation("crouch").getFrameLength(),
+        SLIDING_DURATION =
+            Assets::instance().getAnimation("slide").getFrameLength();
     std::string weapon;
   };
 
@@ -35,7 +41,7 @@ protected:
   void sLifeSpan();
   void sCollision();
   void sState();
-  void sAnimation();
+  void sAnimationState();
   void sRender() override;
   void sDoAction(const Action &action) override;
 

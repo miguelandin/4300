@@ -9,10 +9,13 @@
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <format>
 #include <iostream>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 Scene_Play::Scene_Play(GameEngine *gameEngine, const std::string &levelPath)
@@ -98,10 +101,23 @@ void Scene_Play::spawnPlayer() {
     m_player = m_entities.addEntity("Player");
   }
 
+  m_player->add<CBoundingBox>(m_player->add<CSprite>(
+      m_player->add<CAnimation>(Assets::instance().getAnimation("stand"))));
   m_player->add<CState>();
   m_player->add<CTransform>(gridToMidPixel(0, 1, m_player));
   m_player->add<CInput>();
   m_player->add<CGravity>(1.0f);
+  auto &map = m_player->add<CAnimationMap>().map;
+  map[State::Idle] = "stand";
+  map[State::Running] = "run";
+  map[State::Jumping] = "jump";
+  map[State::Falling] = "fall";
+  map[State::Landing] = "land";
+  map[State::Crouching] = "crouch";
+  map[State::Uncrouching] = "uncrouch";
+  map[State::CrouchIdle] = "crouch_idle";
+  map[State::CrouchWalking] = "crouch_walk";
+  map[State::Sliding] = "slide";
 
   // TODO be sure to add the remaining components to the player (read from
   // m_playerConfig)
@@ -119,6 +135,7 @@ void Scene_Play::update() {
   sLifeSpan();
   sCollision();
   sState();
+  sAnimationState();
   sAnimation();
   sRender();
 }
@@ -129,14 +146,12 @@ void Scene_Play::sMovement() {
 
   assert(cTransform.exists && cGravity.exists);
 
+  cTransform.preVelocity = cTransform.velocity;
   cTransform.velocity.y += cGravity.acc;
 
   cTransform.scale.x = std::copysign(
       cTransform.scale.x, cTransform.velocity.x != 0.0f ? cTransform.velocity.x
                                                         : cTransform.scale.x);
-
-  cTransform.velocity.x = std::clamp(cTransform.velocity.x, -10.0f, 10.0f);
-  cTransform.velocity.y = std::clamp(cTransform.velocity.y, -64.0f, 64.0f);
 
   cTransform.prevPos = cTransform.pos;
   cTransform.pos += cTransform.velocity;
@@ -202,6 +217,22 @@ void Scene_Play::sCollision() {
 }
 
 void Scene_Play::sState() {
+
+  static auto movement = [](CTransform &t, CInput &i, float v, float max) {
+    t.velocity.x += i.right * v;
+    t.velocity.x -= i.left * v;
+    t.velocity.x = std::clamp(t.velocity.x, -max, max);
+  };
+
+  static auto friction = [](CTransform &t, float f, float cap = 1.0f) {
+    auto v = t.velocity.x * f;
+    t.velocity.x = v * (std::abs(v) >= cap);
+  };
+
+  static auto hasEnded = [](const CState &s, int length) {
+    return s.stateTimer > length;
+  };
+
   for (auto &e : m_entities.getEntities()) {
     if (auto &cState = e->get<CState>(); cState.exists) {
       auto &cInput = e->get<CInput>();
@@ -210,6 +241,7 @@ void Scene_Play::sState() {
       auto &cAnimation = e->get<CAnimation>();
       assert(cInput.exists && cTransform.exists && cGravity.exists);
 
+      auto temp = cState.state;
       switch (cState.state) {
       case State::Idle:
         cTransform.velocity = {0, 0};
@@ -220,13 +252,16 @@ void Scene_Play::sState() {
           cState.state = State::Jumping;
         } else if (cTransform.velocity.y > 0) {
           cState.state = State::Falling;
+        } else if (cInput.down) {
+          cState.state = State::Crouching;
         }
-        break;
-      case State::Running:
-        cTransform.velocity.x = cInput.right * m_playerConfig.SPEED;
-        cTransform.velocity.x = cInput.left * m_playerConfig.SPEED;
 
-        cTransform.velocity.x *= m_playerConfig.FRICTION;
+        break;
+
+      case State::Running:
+        friction(cTransform, m_playerConfig.FRICTION);
+        movement(cTransform, cInput, m_playerConfig.SPEED,
+                 m_playerConfig.MAX_X_SPEED);
 
         if (std::abs(cTransform.velocity.x) < 0.1f) {
           cState.state = State::Idle;
@@ -234,87 +269,145 @@ void Scene_Play::sState() {
           cState.state = State::Jumping;
         } else if (cTransform.velocity.y > 0) {
           cState.state = State::Falling;
+        } else if (cInput.left != cInput.right && cInput.down) {
+          cState.state = State::Sliding;
+        } else if (cInput.down) {
+          cState.state = State::Crouching;
         }
         break;
+
       case State::Jumping:
-        if (cState.prevState != State::Jumping) {
+        if (cState.stateTimer == 0) {
           cTransform.velocity.y = m_playerConfig.JUMP;
         }
 
-        cTransform.velocity.x += cInput.right * m_playerConfig.SPEED;
-        cTransform.velocity.x += cInput.left * m_playerConfig.SPEED;
+        movement(cTransform, cInput, m_playerConfig.SPEED,
+                 m_playerConfig.MAX_X_SPEED);
 
         if (cTransform.velocity.y > 0) {
           cState.state = State::Falling;
         }
         break;
+
       case State::Falling:
+        friction(cTransform, m_playerConfig.FRICTION);
+        movement(cTransform, cInput, m_playerConfig.SPEED,
+                 m_playerConfig.MAX_X_SPEED);
+
         if (cGravity.isGrounded) {
-          if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED / 2.0f) {
+          if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED/4.0f) {
             cState.state = State::Landing;
           } else {
             cState.state = State::Idle;
           }
         }
         break;
+
       case State::Landing:
-        if (cAnimation.exists && cAnimation.animation.hasEnded()) {
-          cState = State::Idle;
-        } else if (cState.stateTimer > m_playerConfig.LANDING_DURATION) {
-          cState = State::Idle;
+        friction(cTransform, m_playerConfig.FRICTION);
+
+        if (hasEnded(cState, m_playerConfig.LANDING_DURATION)) {
+          cState.state = State::Idle;
         } else if (cInput.left != cInput.right) {
-          cState = State::Running;
+          cState.state = State::Running;
         } else if (cInput.up && cInput.canJump) {
-          cState = State::Jumping;
+          cState.state = State::Jumping;
         } else if (cInput.down) {
-          cState = State::Crouching;
+          cState.state = State::Crouching;
         }
         break;
+
       case State::Crouching:
         if (!cInput.down) {
           cState.state = State::Uncrouching;
         } else if (cInput.left != cInput.right) {
           cState.state = State::CrouchWalking;
-        } else if (cState.stateTimer > m_playerConfig.CROUCHING_DURATION) {
+        } else if (hasEnded(cState, m_playerConfig.CROUCHING_DURATION)) {
           cState.state = State::CrouchIdle;
         }
         break;
+      case State::Uncrouching:
+
+        friction(cTransform, m_playerConfig.FRICTION);
+        if (cInput.down) {
+          cState.state = State::Crouching;
+        } else if (cInput.left != cInput.right) {
+          cState.state = State::Running;
+        } else if (hasEnded(cState, m_playerConfig.CROUCHING_DURATION)) {
+          cState.state = State::Idle;
+        }
+        break;
       case State::CrouchIdle:
+        friction(cTransform, m_playerConfig.FRICTION);
         if (!cInput.down) {
           cState.state = State::Uncrouching;
         } else if (cInput.left != cInput.right) {
           cState.state = State::CrouchWalking;
         }
         break;
+
       case State::CrouchWalking:
-        cTransform.velocity.x += cInput.right * m_playerConfig.SPEED / 2.0f;
-        cTransform.velocity.x += cInput.left * m_playerConfig.SPEED / 2.0f;
+        friction(cTransform, m_playerConfig.FRICTION);
+        movement(cTransform, cInput, m_playerConfig.SPEED,
+                 m_playerConfig.MAX_X_SPEED / 2.0f);
 
         if (!cInput.down) {
           cState.state = State::Uncrouching;
         } else if (std::abs(cTransform.velocity.x) < 0.1f) {
           cState.state = State::CrouchIdle;
         }
+        break;
+
       case State::Sliding:
         if (cState.prevState != cState.state) {
-          cTransform.velocity.y = m_playerConfig.MAX_X_SPEED;
+          if (cInput.right) {
+            cTransform.velocity.x = m_playerConfig.MAX_X_SPEED * 2;
+          } else {
+            cTransform.velocity.x = -m_playerConfig.MAX_X_SPEED * 2;
+          }
         }
 
-        if (!cInput.down) {
+        movement(cTransform, cInput, 0, m_playerConfig.MAX_X_SPEED * 2);
+
+        if (!cInput.down || hasEnded(cState, m_playerConfig.SLIDING_DURATION)) {
           cState.state = State::Uncrouching;
         } else if (cInput.up && cInput.canJump) {
           cState.state = State::Jumping;
-        } // TODO adaptar para que esto funciona con varias configs y no solo la
-          // del player
+        }
+
+        // TODO adaptar para que esto funciona con varias configs y no solo la
+        // del player
+        break;
       }
+
+      std::cout << stateToString(cState.state) << " "
+                << stateToString(cState.prevState) << " " << cState.stateTimer
+                << std::endl;
+      cState.prevState = temp;
+      cState.stateTimer++;
+      cState.stateTimer *= (cState.prevState == cState.state);
     }
   }
 }
 
-void Scene_Play::
-    sAnimation() { // TODO cambiarle el nombre porque su padre ya usa este
-                   // TODO hacer un map de State a string de nombre de animación
-                   // meterlo como componente para que pueda usarse en enemigos.
+void Scene_Play::sAnimationState() {
+  for (auto &e : m_entities.getEntities()) {
+    if (!e->has<CAnimationMap>() || !e->has<CAnimation>() ||
+        !e->has<CState>()) {
+      continue;
+    }
+
+    const auto &cState = e->get<CState>();
+    if (cState.stateTimer > 0) {
+      continue;
+    }
+
+    const auto &AniMap = e->get<CAnimationMap>().map;
+    const auto &it = AniMap.find(cState.state);
+    assert(it != AniMap.end());
+    e->add<CSprite>(
+        e->add<CAnimation>(Assets::instance().getAnimation(it->second)));
+  }
 }
 
 void Scene_Play::sRender() {

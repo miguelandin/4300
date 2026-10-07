@@ -244,7 +244,7 @@ void Scene_Play::sState() {
       auto temp = cState.state;
       switch (cState.state) {
       case State::Idle:
-        cTransform.velocity = {0, 0};
+        friction(cTransform, m_playerConfig.FRICTION);
 
         if (cInput.left != cInput.right) {
           cState.state = State::Running;
@@ -263,7 +263,8 @@ void Scene_Play::sState() {
         movement(cTransform, cInput, m_playerConfig.SPEED,
                  m_playerConfig.MAX_X_SPEED);
 
-        if (std::abs(cTransform.velocity.x) < 0.1f) {
+        if (cInput.left == cInput.right &&
+            std::abs(cTransform.velocity.x) < 5.0f) {
           cState.state = State::Idle;
         } else if (cInput.up && cInput.canJump) {
           cState.state = State::Jumping;
@@ -290,12 +291,11 @@ void Scene_Play::sState() {
         break;
 
       case State::Falling:
-        friction(cTransform, m_playerConfig.FRICTION);
         movement(cTransform, cInput, m_playerConfig.SPEED,
                  m_playerConfig.MAX_X_SPEED);
 
         if (cGravity.isGrounded) {
-          if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED/4.0f) {
+          if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED / 4.0f) {
             cState.state = State::Landing;
           } else {
             cState.state = State::Idle;
@@ -318,6 +318,7 @@ void Scene_Play::sState() {
         break;
 
       case State::Crouching:
+        friction(cTransform, m_playerConfig.FRICTION);
         if (!cInput.down) {
           cState.state = State::Uncrouching;
         } else if (cInput.left != cInput.right) {
@@ -326,13 +327,12 @@ void Scene_Play::sState() {
           cState.state = State::CrouchIdle;
         }
         break;
-      case State::Uncrouching:
 
+      case State::Uncrouching:
         friction(cTransform, m_playerConfig.FRICTION);
-        if (cInput.down) {
+
+        if (cInput.down && cState.prevState != State::Sliding) {
           cState.state = State::Crouching;
-        } else if (cInput.left != cInput.right) {
-          cState.state = State::Running;
         } else if (hasEnded(cState, m_playerConfig.CROUCHING_DURATION)) {
           cState.state = State::Idle;
         }
@@ -359,15 +359,15 @@ void Scene_Play::sState() {
         break;
 
       case State::Sliding:
-        if (cState.prevState != cState.state) {
+        if (cState.stateTimer == 0) {
           if (cInput.right) {
-            cTransform.velocity.x = m_playerConfig.MAX_X_SPEED * 2;
+            cTransform.velocity.x = m_playerConfig.MAX_X_SPEED * 1.50f;
           } else {
-            cTransform.velocity.x = -m_playerConfig.MAX_X_SPEED * 2;
+            cTransform.velocity.x = -m_playerConfig.MAX_X_SPEED * 1.50f;
           }
         }
 
-        movement(cTransform, cInput, 0, m_playerConfig.MAX_X_SPEED * 2);
+        movement(cTransform, cInput, 0, m_playerConfig.MAX_X_SPEED * 1.25f);
 
         if (!cInput.down || hasEnded(cState, m_playerConfig.SLIDING_DURATION)) {
           cState.state = State::Uncrouching;
@@ -383,9 +383,12 @@ void Scene_Play::sState() {
       std::cout << stateToString(cState.state) << " "
                 << stateToString(cState.prevState) << " " << cState.stateTimer
                 << std::endl;
-      cState.prevState = temp;
+
       cState.stateTimer++;
-      cState.stateTimer *= (cState.prevState == cState.state);
+      if (temp != cState.state) {
+        cState.stateTimer = 0;
+        cState.prevState = temp;
+      }
     }
   }
 }

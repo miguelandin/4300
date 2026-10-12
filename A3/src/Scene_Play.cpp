@@ -77,6 +77,13 @@ void Scene_Play::loadLevel(const std::string &filename) {
   auto sprite = brick->add<CSprite>(animation);
   brick->add<CBoundingBox>(sprite);
   brick->add<CTransform>(gridToMidPixel(5, 5, brick));
+
+  auto brick_1 = m_entities.addEntity("tile");
+  auto animation_1 =
+      brick_1->add<CAnimation>(m_game->assets().getAnimation("question_block"));
+  auto sprite_1 = brick_1->add<CSprite>(animation);
+  brick_1->add<CBoundingBox>(sprite);
+  brick_1->add<CTransform>(gridToMidPixel(15, 5, brick));
   // NOTE: Your final code should position the entity using the gridToMidPixel
   // func read from the levelFile
   // brick->add<CTransform>(gridToMidPixel(gridX,gridY,brick));
@@ -230,7 +237,7 @@ void Scene_Play::sState() {
   };
 
   static auto hasEnded = [](const CState &s, int length) {
-    return s.stateTimer > length;
+    return s.stateTimer >= length;
   };
 
   for (auto &e : m_entities.getEntities()) {
@@ -242,6 +249,8 @@ void Scene_Play::sState() {
       assert(cInput.exists && cTransform.exists && cGravity.exists);
 
       auto temp = cState.state;
+      cInput.canJump += !cInput.up;
+
       switch (cState.state) {
       case State::Idle:
         friction(cTransform, m_playerConfig.FRICTION);
@@ -255,7 +264,6 @@ void Scene_Play::sState() {
         } else if (cInput.down) {
           cState.state = State::Crouching;
         }
-
         break;
 
       case State::Running:
@@ -280,8 +288,11 @@ void Scene_Play::sState() {
       case State::Jumping:
         if (cState.stateTimer == 0) {
           cTransform.velocity.y = m_playerConfig.JUMP;
+          cInput.canJump = false;
         }
-
+        if (!cInput.up) {
+          cTransform.velocity.y *= 0.5f;
+        }
         movement(cTransform, cInput, m_playerConfig.SPEED,
                  m_playerConfig.MAX_X_SPEED);
 
@@ -295,7 +306,7 @@ void Scene_Play::sState() {
                  m_playerConfig.MAX_X_SPEED);
 
         if (cGravity.isGrounded) {
-          if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED / 4.0f) {
+          if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED / 3.0f) {
             cState.state = State::Landing;
           } else {
             cState.state = State::Idle;
@@ -310,8 +321,8 @@ void Scene_Play::sState() {
           cState.state = State::Idle;
         } else if (cInput.left != cInput.right) {
           cState.state = State::Running;
-        } else if (cInput.up && cInput.canJump) {
-          cState.state = State::Jumping;
+        } else if (cInput.left != cInput.right && cInput.down) {
+          cState.state = State::Sliding;
         } else if (cInput.down) {
           cState.state = State::Crouching;
         }
@@ -380,15 +391,14 @@ void Scene_Play::sState() {
         break;
       }
 
-      std::cout << stateToString(cState.state) << " "
-                << stateToString(cState.prevState) << " " << cState.stateTimer
-                << std::endl;
-
       cState.stateTimer++;
       if (temp != cState.state) {
         cState.stateTimer = 0;
         cState.prevState = temp;
       }
+      std::cout << stateToString(cState.state) << " "
+                << stateToString(cState.prevState) << " " << cState.stateTimer
+                << std::endl;
     }
   }
 }

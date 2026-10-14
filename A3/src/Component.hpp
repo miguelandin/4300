@@ -22,20 +22,38 @@ enum class State {
   Sliding,
 };
 
+struct StateBoundingBox {
+  sf::Vector2f disp;
+  sf::Vector2f size;
+};
+
+using BondMap = std::unordered_map<State, StateBoundingBox>;
+
 constexpr std::string_view stateToString(State state) {
-    switch (state) {
-        case State::Idle:          return "Idle";
-        case State::Running:       return "Running";
-        case State::Jumping:       return "Jumping";
-        case State::Falling:       return "Falling";
-        case State::Landing:       return "Landing";
-        case State::Crouching:     return "Crouching";
-        case State::Uncrouching:   return "Uncrouching";
-        case State::CrouchIdle:    return "CrouchIdle";
-        case State::CrouchWalking: return "CrouchWalking";
-        case State::Sliding:       return "Sliding";
-        default:                   return "Unknown";
-    }
+  switch (state) {
+  case State::Idle:
+    return "Idle";
+  case State::Running:
+    return "Running";
+  case State::Jumping:
+    return "Jumping";
+  case State::Falling:
+    return "Falling";
+  case State::Landing:
+    return "Landing";
+  case State::Crouching:
+    return "Crouching";
+  case State::Uncrouching:
+    return "Uncrouching";
+  case State::CrouchIdle:
+    return "CrouchIdle";
+  case State::CrouchWalking:
+    return "CrouchWalking";
+  case State::Sliding:
+    return "Sliding";
+  default:
+    return "Unknown";
+  }
 }
 
 class Component {
@@ -114,21 +132,24 @@ public:
 
 class CBoundingBox : public Component {
 public:
+  sf::Vector2f displacement;
   sf::Vector2f size;
   sf::Vector2f halfSize;
 
   CBoundingBox() = default;
 
-  CBoundingBox(const CSprite &cSprite)
-      : size(cSprite.sprite->getTextureRect().size),
-        halfSize(size.x / 2.0f, size.y / 2.0f) {}
+  CBoundingBox(sf::Vector2f size, sf::Vector2f displacement)
+      : size(size), halfSize(size.x / 2.0f, size.y / 2.0f),
+        displacement(displacement) {}
 
-  CBoundingBox(const CSprite &cSprite, float wScale, float hScale)
-      : CBoundingBox(cSprite) {
-    size.x *= wScale;
-    size.y *= hScale;
-    halfSize = {size.x / 2.0f, size.y / 2.0f};
-  }
+  CBoundingBox(const CSprite &cSprite, sf::Vector2f displacement,
+               sf::Vector2f scale)
+      : CBoundingBox({cSprite.sprite->getTextureRect().size.x * scale.x,
+                      cSprite.sprite->getTextureRect().size.y * scale.y},
+                     displacement) {}
+
+  CBoundingBox(const CSprite &cSprite)
+      : CBoundingBox(cSprite, {0.0f, 0.0f}, {1.0f, 1.0f}) {}
 };
 
 class CGravity : public Component {
@@ -146,14 +167,25 @@ public:
   State state = State::Idle;
   State prevState = State::Idle;
   int stateTimer = 0;
-
   CState() = default;
   CState(State s) : state(s), prevState(s) {}
 };
 
-class CAnimationMap : public Component {
+class CStateAnimationMap : public Component {
 public:
   std::unordered_map<State, std::string> map;
 
-  CAnimationMap() = default;
+  CStateAnimationMap() = default;
+
+  CStateAnimationMap(std::unordered_map<State, std::string> m) : map(m) {}
+};
+
+class CStateBoundingBoxMap : public Component {
+public:
+  std::unordered_map<State, StateBoundingBox> map;
+
+  CStateBoundingBoxMap() = default;
+
+  CStateBoundingBoxMap(std::unordered_map<State, StateBoundingBox> m)
+      : map(m) {}
 };

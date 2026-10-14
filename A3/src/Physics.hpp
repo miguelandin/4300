@@ -1,5 +1,7 @@
 #pragma once
+#include "Component.hpp"
 #include "Entity.hpp"
+#include "EntityManager.hpp"
 #include <SFML/System/Vector2.hpp>
 #include <cassert>
 #include <cstdlib>
@@ -15,29 +17,28 @@ inline sf::Vector2f calculateOverlap(sf::Vector2f posA, sf::Vector2f posB,
   return sf::Vector2f(ox, oy);
 }
 
-inline sf::Vector2f getOverlap(const std::shared_ptr<Entity> &a,
-                               const std::shared_ptr<Entity> &b) {
-  auto boundingA = a->get<CBoundingBox>();
-  auto boundingB = b->get<CBoundingBox>();
-  auto transformA = a->get<CTransform>();
-  auto transformB = b->get<CTransform>();
-  assert(boundingA.exists && boundingB.exists && transformA.exists &&
-         transformB.exists);
+namespace detail {
+inline sf::Vector2f overlapAt(const entity_ptr &a, const entity_ptr &b,
+                              sf::Vector2f CTransform::*posField) {
+  const auto &bA = a->get<CBoundingBox>();
+  const auto &bB = b->get<CBoundingBox>();
+  const auto &tA = a->get<CTransform>();
+  const auto &tB = b->get<CTransform>();
 
-  return calculateOverlap(transformA.pos, transformB.pos, boundingA.halfSize,
-                          boundingB.halfSize);
+  assert(bA.exists && bB.exists && tA.exists && tB.exists);
+
+  return calculateOverlap(tA.*posField + bA.displacement,
+                          tB.*posField + bB.displacement, bA.halfSize,
+                          bB.halfSize);
+}
+}; // namespace detail
+
+inline sf::Vector2f getOverlap(const entity_ptr &a, const entity_ptr &b) {
+  return detail::overlapAt(a, b, &CTransform::pos);
 }
 
 inline sf::Vector2f getPreviousOverlap(const std::shared_ptr<Entity> &a,
                                        const std::shared_ptr<Entity> &b) {
-  auto boundingA = a->get<CBoundingBox>();
-  auto boundingB = b->get<CBoundingBox>();
-  auto transformA = a->get<CTransform>();
-  auto transformB = b->get<CTransform>();
-  assert(boundingA.exists && boundingB.exists && transformA.exists &&
-         transformB.exists);
-
-  return calculateOverlap(transformA.prevPos, transformB.prevPos,
-                          boundingA.halfSize, boundingB.halfSize);
+  return detail::overlapAt(a, b, &CTransform::prevPos);
 }
 } // namespace Physics

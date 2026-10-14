@@ -27,7 +27,7 @@ protected:
   std::string m_levelPath;
   PlayerConfig m_playerConfig;
   bool m_drawTextures = true;
-  bool m_drawCollision = false;
+  bool m_drawBoundingBox = false;
   bool m_drawGrid = false;
   const sf::Vector2f m_gridSize = {64, 64};
 
@@ -42,12 +42,13 @@ protected:
   void sCollision();
   void sState();
   void sAnimationState();
+  void sBoundingBoxState();
   void sRender() override;
   void sDoAction(const Action &action) override;
 
   void drawLines(std::span<const sf::Vertex> points);
   void drawLineStrip(std::span<const sf::Vertex> points);
-  void drawCollision(const entity_ptr &entity);
+  void drawBoundingBox(const entity_ptr &entity);
   void drawGrid();
   void drawTexture(const entity_ptr &entity);
 

@@ -14,7 +14,6 @@
 #include <cmath>
 #include <format>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -114,25 +113,34 @@ void Scene_Play::spawnPlayer() {
   m_player->add<CTransform>(gridToMidPixel(0, 1, m_player));
   m_player->add<CInput>();
   m_player->add<CGravity>(1.0f);
-  auto &map = m_player->add<CAnimationMap>().map;
-  map[State::Idle] = "stand";
-  map[State::Running] = "run";
-  map[State::Jumping] = "jump";
-  map[State::Falling] = "fall";
-  map[State::Landing] = "land";
-  map[State::Crouching] = "crouch";
-  map[State::Uncrouching] = "uncrouch";
-  map[State::CrouchIdle] = "crouch_idle";
-  map[State::CrouchWalking] = "crouch_walk";
-  map[State::Sliding] = "slide";
-
-  // TODO be sure to add the remaining components to the player (read from
-  // m_playerConfig)
+  m_player->add<CStateAnimationMap>(std::unordered_map<State, std::string>{
+      {State::Idle, "stand"},
+      {State::Running, "run"},
+      {State::Jumping, "jump"},
+      {State::Falling, "fall"},
+      {State::Landing, "land"},
+      {State::Crouching, "crouch"},
+      {State::Uncrouching, "uncrouch"},
+      {State::CrouchIdle, "crouch_idle"},
+      {State::CrouchWalking, "crouch_walk"},
+      {State::Sliding, "slide"}});
+  m_player->add<CStateBoundingBoxMap>(
+      std::unordered_map<State, StateBoundingBox>{
+          {State::Idle, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
+          {State::Running, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
+          {State::Jumping, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
+          {State::Falling, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
+          {State::Landing, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
+          {State::Crouching, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
+          {State::CrouchIdle, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
+          {State::CrouchWalking, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
+          {State::Uncrouching, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
+          {State::Sliding, {.disp = {0.0f, 36.0f}, .size = {96.0f, 32.0f}}}});
 }
 
 void Scene_Play::spawnBullet(const entity_ptr &entity) {
-  // TODO spawn a bullet at the given entity, going the direction the entity is
-  // facing
+  // TODO spawn a bullet at the given entity, going the direction the entity
+  // is facing
 }
 
 void Scene_Play::update() {
@@ -143,6 +151,7 @@ void Scene_Play::update() {
   sCollision();
   sState();
   sAnimationState();
+  sBoundingBoxState();
   sAnimation();
   sRender();
 }
@@ -405,7 +414,7 @@ void Scene_Play::sState() {
 
 void Scene_Play::sAnimationState() {
   for (auto &e : m_entities.getEntities()) {
-    if (!e->has<CAnimationMap>() || !e->has<CAnimation>() ||
+    if (!e->has<CStateAnimationMap>() || !e->has<CAnimation>() ||
         !e->has<CState>()) {
       continue;
     }
@@ -415,11 +424,30 @@ void Scene_Play::sAnimationState() {
       continue;
     }
 
-    const auto &AniMap = e->get<CAnimationMap>().map;
+    const auto &AniMap = e->get<CStateAnimationMap>().map;
     const auto &it = AniMap.find(cState.state);
     assert(it != AniMap.end());
     e->add<CSprite>(
         e->add<CAnimation>(Assets::instance().getAnimation(it->second)));
+  }
+}
+
+void Scene_Play::sBoundingBoxState() {
+  for (auto &e : m_entities.getEntities()) {
+    if (!e->has<CStateBoundingBoxMap>() || !e->has<CBoundingBox>() ||
+        !e->has<CState>()) {
+      continue;
+    }
+
+    const auto &cState = e->get<CState>();
+    if (cState.stateTimer > 0) {
+      continue;
+    }
+
+    const auto &BoundMap = e->get<CStateBoundingBoxMap>().map;
+    const auto &it = BoundMap.find(cState.state);
+    assert(it != BoundMap.end());
+    e->add<CBoundingBox>(it->second.size, it->second.disp);
   }
 }
 
@@ -438,9 +466,9 @@ void Scene_Play::sRender() {
   if (m_drawGrid) {
     drawGrid();
   }
-  if (m_drawCollision) {
+  if (m_drawBoundingBox) {
     for (auto &e : m_entities.getEntities()) {
-      drawCollision(e);
+      drawBoundingBox(e);
     }
   }
 }
@@ -460,7 +488,7 @@ void Scene_Play::sDoAction(const Action &action) {
   } else if (action.name() == "shoot") {
     input.shoot = type;
   } else if (action.name() == "toggle_collision" && action.type()) {
-    m_drawCollision = !m_drawCollision;
+    m_drawBoundingBox = !m_drawBoundingBox;
   } else if (action.name() == "toggle_texture" && action.type()) {
     m_drawTextures = !m_drawTextures;
   } else if (action.name() == "toggle_grid" && action.type()) {
@@ -479,12 +507,13 @@ void Scene_Play::drawLineStrip(std::span<const sf::Vertex> points) {
                         sf::PrimitiveType::LineStrip);
 }
 
-void Scene_Play::drawCollision(const entity_ptr &e) {
+void Scene_Play::drawBoundingBox(const entity_ptr &e) {
   if (!e->has<CBoundingBox>() || !e->has<CTransform>()) {
     return;
   }
-  auto size = e->get<CBoundingBox>().halfSize;
-  auto pos = e->get<CTransform>().pos;
+  const auto &boundingBox = e->get<CBoundingBox>();
+  auto size = boundingBox.halfSize;
+  auto pos = e->get<CTransform>().pos + boundingBox.displacement;
   sf::Color color(sf::Color::Red);
   sf::Vertex points[5] = {
       sf::Vertex(sf::Vector2f(pos.x - size.x, pos.y + size.y), color),

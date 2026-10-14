@@ -5,7 +5,7 @@
 
 using ComponentTuple =
     std::tuple<CTransform, CLifespan, CInput, CBoundingBox, CSprite, CAnimation,
-               CGravity, CState, CAnimationMap>; // Components go here
+               CGravity, CState, CStateAnimationMap, CStateBoundingBoxMap>; // Components go here
 
 class Entity {
   friend class EntityManager;

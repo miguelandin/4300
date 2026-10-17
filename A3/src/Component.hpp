@@ -20,6 +20,7 @@ enum class State {
   CrouchWalking,
   CrouchIdle,
   Sliding,
+  Diving
 };
 
 struct StateBoundingBox {
@@ -51,6 +52,8 @@ constexpr std::string_view stateToString(State state) {
     return "CrouchWalking";
   case State::Sliding:
     return "Sliding";
+  case State::Diving:
+    return "Diving";
   default:
     return "Unknown";
   }

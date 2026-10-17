@@ -123,7 +123,8 @@ void Scene_Play::spawnPlayer() {
       {State::Uncrouching, "uncrouch"},
       {State::CrouchIdle, "crouch_idle"},
       {State::CrouchWalking, "crouch_walk"},
-      {State::Sliding, "slide"}});
+      {State::Sliding, "slide"},
+      {State::Diving, "dive"}});
   m_player->add<CStateBoundingBoxMap>(
       std::unordered_map<State, StateBoundingBox>{
           {State::Idle, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
@@ -133,9 +134,11 @@ void Scene_Play::spawnPlayer() {
           {State::Landing, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
           {State::Crouching, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
           {State::CrouchIdle, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
-          {State::CrouchWalking, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
+          {State::CrouchWalking,
+           {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
           {State::Uncrouching, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
-          {State::Sliding, {.disp = {0.0f, 36.0f}, .size = {96.0f, 32.0f}}}});
+          {State::Sliding, {.disp = {0.0f, 36.0f}, .size = {96.0f, 32.0f}}},
+          {State::Diving, {.disp = {0.0f, 36.0f}, .size = {96.0f, 32.0f}}}});
 }
 
 void Scene_Play::spawnBullet(const entity_ptr &entity) {
@@ -332,6 +335,8 @@ void Scene_Play::sState() {
           cState.state = State::Running;
         } else if (cInput.left != cInput.right && cInput.down) {
           cState.state = State::Sliding;
+        } else if(cInput.up && cInput.canJump){
+            cState.state = State::Jumping;
         } else if (cInput.down) {
           cState.state = State::Crouching;
         }
@@ -392,11 +397,24 @@ void Scene_Play::sState() {
         if (!cInput.down || hasEnded(cState, m_playerConfig.SLIDING_DURATION)) {
           cState.state = State::Uncrouching;
         } else if (cInput.up && cInput.canJump) {
-          cState.state = State::Jumping;
+          cState.state = State::Diving;
         }
 
-        // TODO adaptar para que esto funciona con varias configs y no solo la
-        // del player
+        break;
+      case State::Diving:
+        if (cState.stateTimer == 0) {
+          cTransform.velocity.y = m_playerConfig.JUMP * 0.75f;
+          if (cInput.right) {
+            cTransform.velocity.x = m_playerConfig.MAX_X_SPEED * 2;
+          } else {
+            cTransform.velocity.x = -m_playerConfig.MAX_X_SPEED * 2;
+          }
+          cGravity.isGrounded = false;
+        }
+
+        if (cGravity.isGrounded) {
+          cState.state = State::Uncrouching;
+        }
         break;
       }
 

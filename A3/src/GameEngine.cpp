@@ -3,10 +3,12 @@
 #include "Scene_Play.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
+#include <SFML/Window/WindowEnums.hpp>
 #include <utility>
 
 void GameEngine::init(const std::string &path) {
-  m_window.create(sf::VideoMode({1280, 960}), "Super Bro");
+  m_window.create(sf::VideoMode({1280, 960}), "Super Bro",
+                  sf::Style::Titlebar | sf::Style::Close);
   m_window.setFramerateLimit(60);
   Assets::instance().loadFromFile(path);
   m_running = true;

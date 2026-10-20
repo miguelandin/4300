@@ -24,7 +24,7 @@ Animation crouch_idle crouch_idle 4 5
 Texture slide assets/slide.png
 Animation slide slide 9 5
 Texture dive assets/dive.png
-Animation dive dive 4 6 no_repeat
+Animation dive dive 6 5 no_repeat
 
 //Textures
 Texture ground assets/ground.png repeated

@@ -317,7 +317,10 @@ void Scene_Play::sState() {
         movement(cTransform, cInput, m_playerConfig.SPEED,
                  m_playerConfig.MAX_X_SPEED);
 
-        if (cGravity.isGrounded) {
+        if (cState.prevState != State::Jumping && cState.stateTimer <= 15 &&
+            cInput.up && cInput.canJump) {
+          cState.state = State::Jumping;
+        } else if (cGravity.isGrounded) {
           if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED / 3.0f) {
             cState.state = State::Landing;
           } else {
@@ -335,8 +338,8 @@ void Scene_Play::sState() {
           cState.state = State::Running;
         } else if (cInput.left != cInput.right && cInput.down) {
           cState.state = State::Sliding;
-        } else if(cInput.up && cInput.canJump){
-            cState.state = State::Jumping;
+        } else if (cInput.up && cInput.canJump) {
+          cState.state = State::Jumping;
         } else if (cInput.down) {
           cState.state = State::Crouching;
         }
@@ -396,7 +399,7 @@ void Scene_Play::sState() {
 
         if (!cInput.down || hasEnded(cState, m_playerConfig.SLIDING_DURATION)) {
           cState.state = State::Uncrouching;
-        } else if (cInput.up && cInput.canJump) {
+        } else if (cInput.left != cInput.right && cInput.up && cInput.canJump) {
           cState.state = State::Diving;
         }
 

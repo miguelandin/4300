@@ -18,7 +18,11 @@ class Scene_Play : public Scene {
         CROUCHING_DURATION =
             Assets::instance().getAnimation("crouch").getFrameLength(),
         SLIDING_DURATION =
-            Assets::instance().getAnimation("slide").getFrameLength();
+            Assets::instance().getAnimation("slide").getFrameLength(),
+        JUMP_KICK_DURATION =
+            Assets::instance().getAnimation("jump_kick").getFrameLength(),
+        CUSHIONING_DURATION =
+            Assets::instance().getAnimation("cushion").getFrameLength();
     std::string weapon;
   };
 

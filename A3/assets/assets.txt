@@ -25,6 +25,10 @@ Texture slide assets/slide.png
 Animation slide slide 9 5
 Texture dive assets/dive.png
 Animation dive dive 6 5 no_repeat
+Texture jump_kick assets/jump-kick.png
+Animation jump_kick jump_kick 9 3 no_repeat
+Texture cushion assets/cushion.png
+Animation cushion cushion 7 3 no_repeat
 
 //Textures
 Texture ground assets/ground.png repeated

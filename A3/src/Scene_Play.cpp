@@ -97,7 +97,7 @@ void Scene_Play::loadLevel(const std::string &filename) {
   bush->add<CTransform>(gridToMidPixel(10, 1, bush));
 
   auto dirt = m_entities.addEntity("dirt");
-  auto &sprite2 = dirt->add<CSprite>(m_game->assets().getTexture("ground"), 20);
+  auto &sprite2 = dirt->add<CSprite>(m_game->assets().getTexture("ground"), 10000);
   dirt->add<CTransform>(gridToMidPixel(0, 0, dirt));
   dirt->add<CBoundingBox>(sprite2);
 }
@@ -124,7 +124,9 @@ void Scene_Play::spawnPlayer() {
       {State::CrouchIdle, "crouch_idle"},
       {State::CrouchWalking, "crouch_walk"},
       {State::Sliding, "slide"},
-      {State::Diving, "dive"}});
+      {State::Diving, "dive"},
+      {State::Cushioning, "cushion"},
+      {State::KickJumping, "jump_kick"}});
   m_player->add<CStateBoundingBoxMap>(
       std::unordered_map<State, StateBoundingBox>{
           {State::Idle, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
@@ -138,7 +140,10 @@ void Scene_Play::spawnPlayer() {
            {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
           {State::Uncrouching, {.disp = {0.0f, 32.0f}, .size = {48.0f, 48.0f}}},
           {State::Sliding, {.disp = {0.0f, 36.0f}, .size = {96.0f, 32.0f}}},
-          {State::Diving, {.disp = {0.0f, 36.0f}, .size = {96.0f, 32.0f}}}});
+          {State::Diving, {.disp = {0.0f, 36.0f}, .size = {96.0f, 32.0f}}},
+          {State::Cushioning, {.disp = {0.0f, 36.0f}, .size = {96.0f, 32.0f}}},
+          {State::KickJumping,
+           {.disp = {0.0f, 36.0f}, .size = {48.0f, 48.0f}}}});
 }
 
 void Scene_Play::spawnBullet(const entity_ptr &entity) {
@@ -262,6 +267,7 @@ void Scene_Play::sState() {
 
       auto temp = cState.state;
       cInput.canJump += !cInput.up;
+      cInput.canCrouch += !cInput.down;
 
       switch (cState.state) {
       case State::Idle:
@@ -273,7 +279,7 @@ void Scene_Play::sState() {
           cState.state = State::Jumping;
         } else if (cTransform.velocity.y > 0) {
           cState.state = State::Falling;
-        } else if (cInput.down) {
+        } else if (cInput.down && cInput.canCrouch) {
           cState.state = State::Crouching;
         }
         break;
@@ -290,9 +296,10 @@ void Scene_Play::sState() {
           cState.state = State::Jumping;
         } else if (cTransform.velocity.y > 0) {
           cState.state = State::Falling;
-        } else if (cInput.left != cInput.right && cInput.down) {
+        } else if (cInput.left != cInput.right && cInput.down &&
+                   cInput.canCrouch) {
           cState.state = State::Sliding;
-        } else if (cInput.down) {
+        } else if (cInput.down && cInput.canCrouch) {
           cState.state = State::Crouching;
         }
         break;
@@ -317,12 +324,20 @@ void Scene_Play::sState() {
         movement(cTransform, cInput, m_playerConfig.SPEED,
                  m_playerConfig.MAX_X_SPEED);
 
-        if (cState.prevState != State::Jumping && cState.stateTimer <= 15 &&
-            cInput.up && cInput.canJump) {
-          cState.state = State::Jumping;
+        if (cInput.up && cInput.canJump) {
+          if (cState.prevState == State::Jumping) {
+            cState.state = State::KickJumping;
+          } else if (cState.stateTimer <= 5 &&
+                     cState.prevState != State::KickJumping) {
+            cState.state = State::Jumping;
+          }
         } else if (cGravity.isGrounded) {
           if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED / 3.0f) {
-            cState.state = State::Landing;
+            if (cInput.down) {
+              cState.state = State::Cushioning;
+            } else {
+              cState.state = State::Landing;
+            }
           } else {
             cState.state = State::Idle;
           }
@@ -340,13 +355,14 @@ void Scene_Play::sState() {
           cState.state = State::Sliding;
         } else if (cInput.up && cInput.canJump) {
           cState.state = State::Jumping;
-        } else if (cInput.down) {
+        } else if (cInput.down && cInput.canCrouch) {
           cState.state = State::Crouching;
         }
         break;
 
       case State::Crouching:
         friction(cTransform, m_playerConfig.FRICTION);
+
         if (!cInput.down) {
           cState.state = State::Uncrouching;
         } else if (cInput.left != cInput.right) {
@@ -357,9 +373,13 @@ void Scene_Play::sState() {
         break;
 
       case State::Uncrouching:
+        if (cState.stateTimer == 0) {
+          cInput.canCrouch = false;
+        }
+
         friction(cTransform, m_playerConfig.FRICTION);
 
-        if (cInput.down && cState.prevState != State::Sliding) {
+        if (cInput.down && cInput.canCrouch) {
           cState.state = State::Crouching;
         } else if (hasEnded(cState, m_playerConfig.CROUCHING_DURATION)) {
           cState.state = State::Idle;
@@ -390,7 +410,7 @@ void Scene_Play::sState() {
         if (cState.stateTimer == 0) {
           if (cInput.right) {
             cTransform.velocity.x = m_playerConfig.MAX_X_SPEED * 1.50f;
-          } else {
+          } else if (cInput.left) {
             cTransform.velocity.x = -m_playerConfig.MAX_X_SPEED * 1.50f;
           }
         }
@@ -409,13 +429,46 @@ void Scene_Play::sState() {
           cTransform.velocity.y = m_playerConfig.JUMP * 0.75f;
           if (cInput.right) {
             cTransform.velocity.x = m_playerConfig.MAX_X_SPEED * 2;
-          } else {
+          } else if (cInput.left) {
             cTransform.velocity.x = -m_playerConfig.MAX_X_SPEED * 2;
           }
           cGravity.isGrounded = false;
         }
 
         if (cGravity.isGrounded) {
+          if (cInput.down) {
+            cState.state = State::Cushioning;
+          } else {
+            cState.state = State::Uncrouching;
+          }
+        }
+        break;
+      case State::KickJumping:
+        if (cState.stateTimer == 0) {
+          cTransform.velocity.y = m_playerConfig.JUMP * 0.75f;
+        }
+
+        movement(cTransform, cInput, m_playerConfig.SPEED,
+                 m_playerConfig.MAX_X_SPEED);
+
+        if (hasEnded(cState, m_playerConfig.JUMP_KICK_DURATION) &&
+            cTransform.velocity.y > 0) {
+          cState.state = State::Falling;
+        } else if (cGravity.isGrounded) {
+          cState.state = State::Uncrouching;
+        }
+
+        break;
+
+      case State::Cushioning:
+        if (cState.stateTimer == 0) {
+          movement(cTransform, cInput, m_playerConfig.MAX_X_SPEED,
+                   m_playerConfig.MAX_X_SPEED);
+        }
+
+        if (cInput.up && cInput.canJump) {
+          cState.state = State::Diving;
+        } else if (hasEnded(cState, m_playerConfig.CUSHIONING_DURATION)) {
           cState.state = State::Uncrouching;
         }
         break;

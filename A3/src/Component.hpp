@@ -20,7 +20,9 @@ enum class State {
   CrouchWalking,
   CrouchIdle,
   Sliding,
-  Diving
+  Diving,
+  Cushioning,
+  KickJumping
 };
 
 struct StateBoundingBox {
@@ -54,6 +56,10 @@ constexpr std::string_view stateToString(State state) {
     return "Sliding";
   case State::Diving:
     return "Diving";
+  case State::KickJumping:
+    return "KickJumping";
+  case State::Cushioning:
+    return "Cushioning";
   default:
     return "Unknown";
   }
@@ -100,6 +106,7 @@ public:
   bool canShoot = false;
   bool hasJumped = false;
   bool canJump = true;
+  bool canCrouch = true;
 
   CInput() = default;
 };

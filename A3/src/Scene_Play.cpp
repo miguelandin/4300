@@ -97,7 +97,8 @@ void Scene_Play::loadLevel(const std::string &filename) {
   bush->add<CTransform>(gridToMidPixel(10, 1, bush));
 
   auto dirt = m_entities.addEntity("dirt");
-  auto &sprite2 = dirt->add<CSprite>(m_game->assets().getTexture("ground"), 10000);
+  auto &sprite2 =
+      dirt->add<CSprite>(m_game->assets().getTexture("ground"), 10000);
   dirt->add<CTransform>(gridToMidPixel(0, 0, dirt));
   dirt->add<CBoundingBox>(sprite2);
 }
@@ -324,15 +325,8 @@ void Scene_Play::sState() {
         movement(cTransform, cInput, m_playerConfig.SPEED,
                  m_playerConfig.MAX_X_SPEED);
 
-        if (cInput.up && cInput.canJump) {
-          if (cState.prevState == State::Jumping) {
-            cState.state = State::KickJumping;
-          } else if (cState.stateTimer <= 5 &&
-                     cState.prevState != State::KickJumping) {
-            cState.state = State::Jumping;
-          }
-        } else if (cGravity.isGrounded) {
-          if (cTransform.preVelocity.y > m_playerConfig.MAX_Y_SPEED / 3.0f) {
+        if (cGravity.isGrounded) {
+          if (cTransform.preVelocity.y > m_playerConfig.MAX_X_SPEED / 3.0f) {
             if (cInput.down) {
               cState.state = State::Cushioning;
             } else {
@@ -340,6 +334,13 @@ void Scene_Play::sState() {
             }
           } else {
             cState.state = State::Idle;
+          }
+        } else if (cInput.up && cInput.canJump) {
+          if (cState.prevState == State::Jumping) {
+            cState.state = State::KickJumping;
+          } else if (cState.stateTimer < 5 &&
+                     cState.prevState != State::KickJumping) {
+            cState.state = State::Jumping;
           }
         }
         break;
@@ -446,6 +447,7 @@ void Scene_Play::sState() {
       case State::KickJumping:
         if (cState.stateTimer == 0) {
           cTransform.velocity.y = m_playerConfig.JUMP * 0.75f;
+          cInput.canJump = false;
         }
 
         movement(cTransform, cInput, m_playerConfig.SPEED,

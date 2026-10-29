@@ -22,7 +22,7 @@ Animation crouch_walk crouch_walk 11 5
 Texture crouch_idle assets/crouch_idle.png
 Animation crouch_idle crouch_idle 4 5
 Texture slide assets/slide.png
-Animation slide slide 9 5
+Animation slide slide 3 5 no_repeat
 Texture dive assets/dive.png
 Animation dive dive 6 5 no_repeat
 Texture jump_kick assets/jump-kick.png

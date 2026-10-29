@@ -417,16 +417,10 @@ void Scene_Play::sState() {
 
       case State::Sliding:
         if (cState.stateTimer == 0) {
-          if (cInput.right) {
-            cTransform.velocity.x = m_playerConfig.MAX_X_SPEED * 1.50f;
-          } else if (cInput.left) {
-            cTransform.velocity.x = -m_playerConfig.MAX_X_SPEED * 1.50f;
-          }
+            cTransform.velocity.x *= 1.25f;
         }
 
-        movement(cTransform, cInput, 0, m_playerConfig.MAX_X_SPEED * 1.25f);
-
-        if (!cInput.down || hasEnded(cState, m_playerConfig.SLIDING_DURATION)) {
+        if (!cInput.down || hasEnded(cState, m_playerConfig.SLIDING_DURATION*3)) {
           cState.state = State::Uncrouching;
         } else if (cInput.left != cInput.right && cInput.up && cInput.canJump) {
           cState.state = State::Diving;
@@ -461,6 +455,7 @@ void Scene_Play::sState() {
         movement(cTransform, cInput, m_playerConfig.SPEED,
                  m_playerConfig.MAX_X_SPEED);
 
+
         if (hasEnded(cState, m_playerConfig.JUMP_KICK_DURATION) &&
             cTransform.velocity.y > 0) {
           cState.state = State::Falling;
@@ -471,11 +466,6 @@ void Scene_Play::sState() {
         break;
 
       case State::Cushioning:
-        if (cState.stateTimer == 0) {
-          movement(cTransform, cInput, m_playerConfig.MAX_X_SPEED,
-                   m_playerConfig.MAX_X_SPEED);
-        }
-
         if (cInput.up && cInput.canJump) {
           cState.state = State::Diving;
         } else if (hasEnded(cState, m_playerConfig.CUSHIONING_DURATION)) {

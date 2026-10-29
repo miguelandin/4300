@@ -29,6 +29,8 @@ Texture jump_kick assets/jump-kick.png
 Animation jump_kick jump_kick 9 3 no_repeat
 Texture cushion assets/cushion.png
 Animation cushion cushion 7 3 no_repeat
+Texture fast_run assets/fast-run.png
+Animation fast_run fast_run 8 5
 
 //Textures
 Texture ground assets/ground.png repeated

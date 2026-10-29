@@ -127,11 +127,13 @@ void Scene_Play::spawnPlayer() {
       {State::Sliding, "slide"},
       {State::Diving, "dive"},
       {State::Cushioning, "cushion"},
-      {State::KickJumping, "jump_kick"}});
+      {State::KickJumping, "jump_kick"},
+      {State::FastRunning, "fast_run"}});
   m_player->add<CStateBoundingBoxMap>(
       std::unordered_map<State, StateBoundingBox>{
           {State::Idle, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
           {State::Running, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
+          {State::FastRunning, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
           {State::Jumping, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
           {State::Falling, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
           {State::Landing, {.disp = {0.0f, 8.0f}, .size = {32.0f, 96.0f}}},
@@ -285,10 +287,13 @@ void Scene_Play::sState() {
         }
         break;
 
+      case State::FastRunning:
       case State::Running:
         friction(cTransform, m_playerConfig.FRICTION);
-        movement(cTransform, cInput, m_playerConfig.SPEED,
-                 m_playerConfig.MAX_X_SPEED);
+        movement(cTransform, cInput, m_playerConfig.SPEED + m_playerConfig.SPEED * (cState.state == State::FastRunning),
+                 m_playerConfig.MAX_X_SPEED +
+                     m_playerConfig.MAX_X_SPEED *
+                         (cState.state == State::FastRunning));
 
         if (cInput.left == cInput.right &&
             std::abs(cTransform.velocity.x) < 5.0f) {
@@ -380,7 +385,10 @@ void Scene_Play::sState() {
 
         friction(cTransform, m_playerConfig.FRICTION);
 
-        if (cInput.down && cInput.canCrouch) {
+        if (cState.prevState == State::Cushioning &&
+            cInput.left != cInput.right) {
+          cState.state = State::FastRunning;
+        } else if (cInput.down && cInput.canCrouch) {
           cState.state = State::Crouching;
         } else if (hasEnded(cState, m_playerConfig.CROUCHING_DURATION)) {
           cState.state = State::Idle;

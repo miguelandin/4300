@@ -22,7 +22,8 @@ enum class State {
   Sliding,
   Diving,
   Cushioning,
-  KickJumping
+  KickJumping,
+  FastRunning
 };
 
 struct StateBoundingBox {

@@ -34,6 +34,7 @@ protected:
   bool m_drawBoundingBox = false;
   bool m_drawGrid = false;
   const sf::Vector2f m_gridSize = {64, 64};
+  sf::View m_gameCamera{sf::Vector2f{0.f, 0.f},sf::Vector2f{m_game->window().getSize()}};
 
   void init(const std::string &levelPath);
   void loadLevel(const std::string &filename);
@@ -48,6 +49,7 @@ protected:
   void sAnimationState();
   void sBoundingBoxState();
   void sRender() override;
+  void sCamera();
   void sDoAction(const Action &action) override;
 
   void drawLines(std::span<const sf::Vertex> points);

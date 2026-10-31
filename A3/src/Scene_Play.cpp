@@ -164,6 +164,7 @@ void Scene_Play::update() {
   sAnimationState();
   sBoundingBoxState();
   sAnimation();
+  sCamera();
   sRender();
 }
 
@@ -545,6 +546,11 @@ void Scene_Play::sRender() {
       drawBoundingBox(e);
     }
   }
+}
+
+void Scene_Play::sCamera(){
+    m_gameCamera.setCenter(m_player->get<CTransform>().pos);
+    m_game->window().setView(m_gameCamera);
 }
 
 void Scene_Play::sDoAction(const Action &action) {
